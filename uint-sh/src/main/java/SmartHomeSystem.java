@@ -11,6 +11,15 @@ public class SmartHomeSystem {
 
         Scheduler scheduler = new Scheduler();
 
+        // 🔁 Load previously saved devices
+        devices.addAll(DeviceStorage.loadDevices(notificationService));
+        System.out.println("🔁 Loaded " + devices.size() + " devices from file.");
+        for (Device device : devices) {
+            Thread thread = new Thread(device);
+            deviceThreads.add(thread);
+            thread.start();
+        }
+
         boolean running = true;
         while (running) {
             System.out.println("\n=== Smart Home Main Menu ===");
@@ -32,6 +41,8 @@ public class SmartHomeSystem {
                     System.out.println("[Schedule menu coming soon]");
                     break;
                 case "4":
+                    // 💾 Save devices before exiting
+                    DeviceStorage.saveDevices(devices);
                     running = false;
                     break;
                 default:
@@ -86,7 +97,6 @@ public class SmartHomeSystem {
             System.out.println("No devices registered.");
         } else {
             System.out.println("\nRegistered Devices (sorted by ID):");
-
             devices.stream()
                     .sorted(Comparator.comparing(Device::getId))
                     .forEachOrdered(device ->
@@ -95,12 +105,14 @@ public class SmartHomeSystem {
         }
     }
 
-
     private static void addDevice(Device device) {
         devices.add(device);
         Thread thread = new Thread(device);
         deviceThreads.add(thread);
         thread.start();
+
+        // 💾 Save after adding
+        DeviceStorage.saveDevices(devices);
     }
 
     private static void addDeviceInteractive() {
@@ -139,7 +151,9 @@ public class SmartHomeSystem {
             if (index >= 0 && index < devices.size()) {
                 Device removed = devices.remove(index);
                 System.out.println("Removed device: " + removed.getName());
-                // No direct thread shutdown here; just interrupt all and clean up later
+
+                // 💾 Save after removal
+                DeviceStorage.saveDevices(devices);
             } else {
                 System.out.println("Invalid selection.");
             }
