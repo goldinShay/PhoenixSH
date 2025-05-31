@@ -23,12 +23,26 @@ public abstract class Device implements Runnable {
         return name;
     }
 
+    // ✅ Added setter so devices can be renamed during edit
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    // ✅ Optional: if you'll ever want to change type too in the future
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public abstract void simulate();
 
     @Override
     public void run() {
         simulate();
     }
-    public abstract String toDataString(); // Abstract method
 
+    public abstract String toDataString(); // Abstract method for persistence
 }

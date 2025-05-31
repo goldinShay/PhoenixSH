@@ -32,6 +32,16 @@ public class Light extends Device {
         return isOn;
     }
 
+    // ✅ NEW: Set name
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    // ✅ NEW: Set status
+    public void setStatus(boolean isOn) {
+        this.isOn = isOn;
+    }
+
     @Override
     public String toDataString() {
         return "Light|" + getId() + "|" + getName();
@@ -49,6 +59,6 @@ public class Light extends Device {
 
     @Override
     public void simulate() {
-        // TODO: Implement your simulation logic.
+        // You could add a flicker simulation or toggle on/off here later
     }
 }

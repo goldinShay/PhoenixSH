@@ -8,12 +8,9 @@ public class SmartHomeSystem {
     private static final NotificationService notificationService = new NotificationService();
 
     public static void main(String[] args) {
-
         Scheduler scheduler = new Scheduler();
-
-        // 🔁 Load previously saved devices
+        // Load devices at startup
         devices.addAll(DeviceStorage.loadDevices(notificationService));
-        System.out.println("🔁 Loaded " + devices.size() + " devices from file.");
         for (Device device : devices) {
             Thread thread = new Thread(device);
             deviceThreads.add(thread);
@@ -41,9 +38,8 @@ public class SmartHomeSystem {
                     System.out.println("[Schedule menu coming soon]");
                     break;
                 case "4":
-                    // 💾 Save devices before exiting
-                    DeviceStorage.saveDevices(devices);
                     running = false;
+                    DeviceStorage.saveDevices(devices); // Save on exit
                     break;
                 default:
                     System.out.println("Invalid option. Please choose 1-4.");
@@ -78,7 +74,7 @@ public class SmartHomeSystem {
                     addDeviceInteractive();
                     break;
                 case "3":
-                    System.out.println("[Update device coming soon]");
+                    updateDeviceInteractive();
                     break;
                 case "4":
                     removeDeviceInteractive();
@@ -110,8 +106,6 @@ public class SmartHomeSystem {
         Thread thread = new Thread(device);
         deviceThreads.add(thread);
         thread.start();
-
-        // 💾 Save after adding
         DeviceStorage.saveDevices(devices);
     }
 
@@ -145,20 +139,62 @@ public class SmartHomeSystem {
         listDevices();
         if (devices.isEmpty()) return;
 
-        System.out.print("Enter device number to remove: ");
-        try {
-            int index = Integer.parseInt(scanner.nextLine()) - 1;
-            if (index >= 0 && index < devices.size()) {
-                Device removed = devices.remove(index);
-                System.out.println("Removed device: " + removed.getName());
+        System.out.print("Enter device ID to remove: ");
+        String input = scanner.nextLine().trim();
 
-                // 💾 Save after removal
-                DeviceStorage.saveDevices(devices);
-            } else {
-                System.out.println("Invalid selection.");
+        Optional<Device> toRemove = devices.stream()
+                .filter(d -> d.getId().equalsIgnoreCase(input))
+                .findFirst();
+
+        if (toRemove.isPresent()) {
+            Device removed = toRemove.get();
+            devices.remove(removed);
+            System.out.println("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
+            DeviceStorage.saveDevices(devices);
+        } else {
+            System.out.println("❌ No device found with that ID or name.");
+        }
+    }
+
+    private static void updateDeviceInteractive() {
+        listDevices();
+        if (devices.isEmpty()) return;
+
+        System.out.print("Enter device ID to update: ");
+        String input = scanner.nextLine().trim();
+
+        Optional<Device> toUpdate = devices.stream()
+                .filter(d -> d.getId().equalsIgnoreCase(input))
+                .findFirst();
+
+        if (toUpdate.isPresent()) {
+            Device device = toUpdate.get();
+
+            System.out.print("Enter new name for the device (or leave blank to keep '" + device.getName() + "'): ");
+            String newName = scanner.nextLine();
+            if (!newName.trim().isEmpty()) {
+                device.setName(newName.trim());
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid input.");
+
+            if (device instanceof Thermostat thermostat) {
+                System.out.print("Enter new temperature (current: " + thermostat.getTemperature() + "): ");
+                String tempStr = scanner.nextLine();
+                if (!tempStr.trim().isEmpty()) {
+                    thermostat.setTemperature(Double.parseDouble(tempStr));
+                }
+
+                System.out.print("Enter new threshold (current: " + thermostat.getThreshold() + "): ");
+                String thresholdStr = scanner.nextLine();
+                if (!thresholdStr.trim().isEmpty()) {
+                    thermostat.setThreshold(Double.parseDouble(thresholdStr));
+                }
+            }
+
+            System.out.println("✅ Device updated.");
+            DeviceStorage.saveDevices(devices);
+        }
+        else {
+            System.out.println("❌ No device found with that ID or name.");
         }
     }
 }

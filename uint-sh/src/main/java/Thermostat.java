@@ -29,13 +29,20 @@ public class Thermostat extends Device {
         return temperature;
     }
 
+    public void setTemperature(double temperature) {
+        this.temperature = temperature;
+    }
+
     public double getThreshold() {
         return threshold;
     }
 
+    public void setThreshold(double threshold) {
+        this.threshold = threshold;
+    }
+
     @Override
     public void simulate() {
-        // Simple temperature fluctuation simulation
         double change = (random.nextDouble() * 2) - 1; // range [-1.0, +1.0]
         temperature += change;
 
@@ -66,11 +73,9 @@ public class Thermostat extends Device {
             double temperature = Double.parseDouble(parts[4]);
             double threshold = Double.parseDouble(parts[5]);
 
-            // No type needed here — constructor already sets it
             return new Thermostat(id, name, temperature, threshold, service);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid number format in temperature fields.", e);
         }
     }
-
 }
