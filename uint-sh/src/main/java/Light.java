@@ -1,4 +1,5 @@
 import java.time.Clock;
+import java.util.Arrays;
 
 public class Light extends Device {
 
@@ -16,13 +17,13 @@ public class Light extends Device {
 
     // Constructor with name + clock (auto-generates ID)
     public Light(String name, Clock clock) {
-        super(generateId(), name, "light", clock);
+        super(generateId(), name, "Light", clock);
         this.isOn = false;
     }
 
     // Optional: Constructor with explicit ID
     public Light(String id, String name, Clock clock) {
-        super(id, name, "light", clock);
+        super(id, name, "Light", clock);
         this.isOn = false;
     }
 
@@ -30,7 +31,7 @@ public class Light extends Device {
 
     public static Light fromDataString(String[] parts, Clock clock) {
         if (parts == null || parts.length < 3) {
-            throw new IllegalArgumentException("Invalid data string: not enough parts to create a Light.");
+            throw new IllegalArgumentException("Invalid data string: not enough parts to create a Light." + Arrays.toString(parts));
         }
 
         String id = parts[1];

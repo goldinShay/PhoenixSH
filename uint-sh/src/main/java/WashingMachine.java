@@ -1,4 +1,5 @@
 import java.time.Clock;
+import java.util.Arrays;
 
 public class WashingMachine extends Device {
     private String brand;
@@ -63,6 +64,18 @@ public class WashingMachine extends Device {
     public boolean isRunning() {
         return running;
     }
+    public static WashingMachine fromDataString(String[] parts, Clock clock) {
+        if (parts.length < 5) {
+            throw new IllegalArgumentException("Invalid WashingMachine data: " + Arrays.toString(parts));
+        }
+        String id = parts[1];
+        String name = parts[2];
+        String brand = parts[3];
+        String model = parts[4];
+
+        return new WashingMachine(id, name, brand, model);
+    }
+
 
     @Override
     public String toString() {

@@ -43,7 +43,7 @@ Thermostat - Home heater controller on/off notifications on thresholds and temp 
         
 Need to connect to global time ✔
 All Devices need turn On/Off (+isOn?) ✔
-What if name already exist?
+What if name already exist? ✔
 
              TYPE  |  Returns   |     Example
 Add SENSORS: Temp    Double            25.69
@@ -52,10 +52,12 @@ Add SENSORS: Temp    Double            25.69
              Noise    Bool       Hand-Clap detected
              Smoke    Bool        Smoke detected
           volumetric  Bool        Person in room
-          
-Add Devices:    TYPE      |    Tasks             |    Messages
-          Washing Machine   Start, Stop            Task status, task time, out of detergent / softner
-                Dryer       Start, Stop            Task status, task time   
+          WMDetergent Bool        out of Detergent
+           WMSoftner  Bool        out of Softner
+           
+Add Devices:    TYPE      |    Brand/Model     |    Tasks             |    Messages
+          Washing Machine     Sumsung WM25     Start, Stop            Task status, task time, out of detergent / softner
+                Dryer          Bosch  LD25     Start, Stop            Task status, task time   
         
 tests:
 

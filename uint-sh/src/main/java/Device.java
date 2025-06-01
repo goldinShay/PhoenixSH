@@ -1,4 +1,5 @@
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 
 // Base class for all devices
@@ -7,6 +8,9 @@ public abstract class Device implements Runnable {
     protected String name;
     protected String type;
     private boolean isOn;
+    private Instant lastOnTimestamp;
+    private Instant lastOffTimestamp;
+
 
     private final Clock clock;
 
@@ -44,6 +48,15 @@ public abstract class Device implements Runnable {
         return type;
     }
 
+    public Instant getLastOnTimestamp() {
+        return lastOnTimestamp;
+    }
+
+    public Instant getLastOffTimestamp() {
+        return lastOffTimestamp;
+    }
+
+
     public void setType(String type) {
         this.type = type;
         this.updatedAt = ZonedDateTime.now(clock);
@@ -51,13 +64,16 @@ public abstract class Device implements Runnable {
 
     public void turnOn() {
         isOn = true;
+        lastOnTimestamp = Instant.now(clock);
         this.updatedAt = ZonedDateTime.now(clock);
     }
 
     public void turnOff() {
         isOn = false;
+        lastOffTimestamp = Instant.now(clock);
         this.updatedAt = ZonedDateTime.now(clock);
     }
+
 
     public boolean isOn() {
         return isOn;

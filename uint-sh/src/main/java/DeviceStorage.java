@@ -13,13 +13,15 @@ public class DeviceStorage {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(";");
+                String[] parts = line.split("\\|");
                 if (parts.length < 1) continue;
 
                 String type = parts[0];
                 switch (type) {
                     case "Light" -> loadedDevices.add(Light.fromDataString(parts, clock));
                     case "Thermostat" -> loadedDevices.add(Thermostat.fromDataString(parts, notificationService, clock));
+                    case "WashingMachine" -> loadedDevices.add(WashingMachine.fromDataString(parts, clock));
+                    case "Dryer" -> loadedDevices.add(Dryer.fromDataString(parts, clock));
                     default -> System.out.println("❓ Unknown device type: " + type);
                 }
             }

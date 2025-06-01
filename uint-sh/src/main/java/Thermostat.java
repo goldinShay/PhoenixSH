@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.Random;
 import java.time.Clock;
 
@@ -62,7 +63,7 @@ public class Thermostat extends Device {
     // ✅ Static factory with Clock and NotificationService
     public static Thermostat fromDataString(String[] parts, NotificationService service, Clock clock) {
         if (parts == null || parts.length < 6) {
-            throw new IllegalArgumentException("Invalid data string: not enough parts to create a Thermostat.");
+            throw new IllegalArgumentException("Invalid data string: not enough parts to create a Thermostat." + Arrays.toString(parts));
         }
 
         try {

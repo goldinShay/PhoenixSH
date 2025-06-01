@@ -1,6 +1,5 @@
 import java.util.*;
-import java.time.Clock; // ✅ Used for consistent time management
-import java.time.ZonedDateTime;
+import java.time.Clock;
 
 public class SmartHomeSystem {
 
@@ -8,7 +7,7 @@ public class SmartHomeSystem {
     private static final List<Thread> deviceThreads = new ArrayList<>();
     private static final Scanner scanner = new Scanner(System.in);
     private static final NotificationService notificationService = new NotificationService();
-    private static final Clock clock = ClockUtil.getClock(); // ✅ Shared Clock instance
+    private static final Clock clock = ClockUtil.getClock();
 
     public static void main(String[] args) {
         Scheduler scheduler = new Scheduler();
@@ -41,7 +40,7 @@ public class SmartHomeSystem {
                 case "3" -> System.out.println("[Schedule menu coming soon]");
                 case "4" -> {
                     running = false;
-                    DeviceStorage.saveDevices(devices); // Save on exit
+                    DeviceStorage.saveDevices(devices);
                     log("💾 Devices saved before exit.");
                 }
                 default -> System.out.println("Invalid option. Please choose 1-4.");
@@ -96,7 +95,6 @@ public class SmartHomeSystem {
         }
     }
 
-    // ✅ Uses Clock-aware constructor
     private static void addDevice(Device device) {
         devices.add(device);
         Thread thread = new Thread(device);
@@ -111,12 +109,12 @@ public class SmartHomeSystem {
                 .anyMatch(device -> device.getName().equalsIgnoreCase(name));
     }
 
-
     private static void addDeviceInteractive() {
         System.out.println("Choose device type:");
         System.out.println("1 - Light");
         System.out.println("2 - Thermostat");
         System.out.println("3 - Washing Machine");
+        System.out.println("4 - Dryer");
         System.out.print("Enter choice: ");
         String typeChoice = scanner.nextLine();
 
@@ -137,18 +135,21 @@ public class SmartHomeSystem {
                 double maxTemp = Double.parseDouble(scanner.nextLine());
                 addDevice(new Thermostat(name, minTemp, maxTemp, notificationService, clock));
             }
-            case "3" -> {
+            case "3", "4" -> {
                 System.out.print("Enter brand: ");
                 String brand = scanner.nextLine().trim();
                 System.out.print("Enter model: ");
                 String model = scanner.nextLine().trim();
-                addDevice(new WashingMachine(name, brand, model, clock));
+
+                if (typeChoice.equals("3")) {
+                    addDevice(new WashingMachine(name, brand, model, clock));
+                } else {
+                    addDevice(new Dryer(name, brand, model, clock));
+                }
             }
             default -> System.out.println("Invalid device type.");
         }
     }
-
-
 
     private static void removeDeviceInteractive() {
         listDevices();
@@ -163,15 +164,12 @@ public class SmartHomeSystem {
 
         if (toRemove.isPresent()) {
             Device removed = toRemove.get();
-
-            // ✅ Mark as removed before deleting
-            removed.markAsRemoved(clock);
-
+            removed.markAsRemoved(clock); // ✅ timestamped removal
             devices.remove(removed);
             log("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
             DeviceStorage.saveDevices(devices);
         } else {
-            System.out.println("❌ No device found with that ID or name.");
+            System.out.println("❌ No device found with that ID.");
         }
     }
 
@@ -193,7 +191,6 @@ public class SmartHomeSystem {
 
         Device device = toUpdate.get();
 
-        // === Handle Name Update ===
         System.out.print("Enter new name for the device (or leave blank to keep '" + device.getName() + "'): ");
         String newName = scanner.nextLine().trim();
 
@@ -207,7 +204,6 @@ public class SmartHomeSystem {
             device.setName(newName);
         }
 
-        // === Handle Thermostat-Specific Update ===
         if (device instanceof Thermostat thermostat) {
             System.out.print("Enter new temperature (current: " + thermostat.getTemperature() + "): ");
             String tempStr = scanner.nextLine().trim();
@@ -230,8 +226,22 @@ public class SmartHomeSystem {
             }
         }
 
+        // ✅ Handle Dryer update
+        if (device instanceof Dryer dryer) {
+            System.out.print("Enter new brand (current: " + dryer.getBrand() + "): ");
+            String newBrand = scanner.nextLine().trim();
+            if (!newBrand.isEmpty()) {
+                dryer.setBrand(newBrand);
+            }
+
+            System.out.print("Enter new model (current: " + dryer.getModel() + "): ");
+            String newModel = scanner.nextLine().trim();
+            if (!newModel.isEmpty()) {
+                dryer.setModel(newModel);
+            }
+        }
+
         log("✏️ Device updated: " + device.getName() + " [" + device.getId() + "]");
         DeviceStorage.saveDevices(devices);
     }
-
 }
