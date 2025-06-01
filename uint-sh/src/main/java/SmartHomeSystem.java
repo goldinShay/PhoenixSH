@@ -30,7 +30,8 @@ public class SmartHomeSystem {
             System.out.println("1 - Devices");
             System.out.println("2 - Monitor");
             System.out.println("3 - Schedule");
-            System.out.println("4 - Exit");
+            System.out.println("4 - Test a Device");
+            System.out.println("5 - Exit");
             System.out.print("Choose an option: ");
             String choice = scanner.nextLine();
 
@@ -38,12 +39,13 @@ public class SmartHomeSystem {
                 case "1" -> showDevicesMenu();
                 case "2" -> System.out.println("[Monitor menu coming soon]");
                 case "3" -> System.out.println("[Schedule menu coming soon]");
-                case "4" -> {
+                case "4" -> toggleDevicePower();
+                case "5" -> {
                     running = false;
                     DeviceStorage.saveDevices(devices);
                     log("💾 Devices saved before exit.");
                 }
-                default -> System.out.println("Invalid option. Please choose 1-4.");
+                default -> System.out.println("Invalid option. Please choose 1-5.");
             }
         }
 
@@ -51,7 +53,7 @@ public class SmartHomeSystem {
             t.interrupt();
         }
 
-        log("🛑 Smart Home Simulation stopped.");
+        log("🛑 UNIT's Smart Home Simulation stopped.");
         scanner.close();
     }
 
@@ -68,6 +70,7 @@ public class SmartHomeSystem {
             System.out.println("3 - Update");
             System.out.println("4 - Remove");
             System.out.println("5 - Back");
+            System.out.println("6 - Toggle On/Off");
             System.out.print("Choose an option: ");
             String choice = scanner.nextLine();
 
@@ -77,7 +80,8 @@ public class SmartHomeSystem {
                 case "3" -> updateDeviceInteractive();
                 case "4" -> removeDeviceInteractive();
                 case "5" -> back = true;
-                default -> System.out.println("Invalid option. Please choose 1-5.");
+                case "6" -> toggleDevicePower();
+                default -> System.out.println("Invalid option. Please choose 1-6.");
             }
         }
     }
@@ -90,10 +94,31 @@ public class SmartHomeSystem {
             devices.stream()
                     .sorted(Comparator.comparing(Device::getId))
                     .forEachOrdered(device ->
-                            System.out.println(device.getName() + " [" + device.getId() + "]")
+                            System.out.println(device.getName() + " [" + device.getId() + "] | Status: " + (device.isOn() ? "ON" : "OFF"))
                     );
         }
     }
+
+    private static void toggleDevicePower() {
+        listDevices();
+        if (devices.isEmpty()) return;
+
+        System.out.print("Enter device ID to test: ");
+        String id = scanner.nextLine().trim();
+
+        Optional<Device> target = devices.stream()
+                .filter(d -> d.getId().equalsIgnoreCase(id))
+                .findFirst();
+
+        if (target.isPresent()) {
+            Device device = target.get();
+            log("🧪 Starting test for device: " + device.getName() + " [" + device.getId() + "]");
+            device.testDevice(); // ← THIS will call your updated method!
+        } else {
+            System.out.println("❌ No device found with that ID.");
+        }
+    }
+
 
     private static void addDevice(Device device) {
         devices.add(device);
@@ -164,7 +189,7 @@ public class SmartHomeSystem {
 
         if (toRemove.isPresent()) {
             Device removed = toRemove.get();
-            removed.markAsRemoved(clock); // ✅ timestamped removal
+            removed.markAsRemoved(clock);
             devices.remove(removed);
             log("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
             DeviceStorage.saveDevices(devices);
@@ -226,7 +251,6 @@ public class SmartHomeSystem {
             }
         }
 
-        // ✅ Handle Dryer update
         if (device instanceof Dryer dryer) {
             System.out.print("Enter new brand (current: " + dryer.getBrand() + "): ");
             String newBrand = scanner.nextLine().trim();

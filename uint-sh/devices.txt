@@ -1,5 +1,5 @@
 Light|L001|Front Door
 Light|L002|Back Door
 Dryer|Dr001|FamilyD|Bochs|BCD14025
-Thermostat|T001|Basement|thermostat|13.518170321504115|25.0
+Thermostat|T001|Basement|thermostat|13.359901268965144|25.0
 WashingMachine|WM001|FamilyWash|Bosch|BWM14025
