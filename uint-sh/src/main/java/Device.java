@@ -3,6 +3,7 @@ public abstract class Device implements Runnable {
     protected String deviceId;
     protected String name;
     protected String type;
+    private boolean isOn;
 
     public Device(String deviceId, String name, String type) {
         this.deviceId = deviceId;
@@ -35,6 +36,18 @@ public abstract class Device implements Runnable {
     // ✅ Optional: if you'll ever want to change type too in the future
     public void setType(String type) {
         this.type = type;
+    }
+
+    public void turnOn() {
+        isOn = true;
+    }
+
+    public void turnOff() {
+        isOn = false;
+    }
+
+    public boolean isOn() {
+        return isOn;
     }
 
     public abstract void simulate();

@@ -20,26 +20,9 @@ public class Light extends Device {
         this.isOn = false;
     }
 
-    public void turnOn() {
-        isOn = true;
-    }
-
-    public void turnOff() {
-        isOn = false;
-    }
-
-    public boolean getStatus() {
-        return isOn;
-    }
-
     // ✅ NEW: Set name
     public void setName(String name) {
         this.name = name;
-    }
-
-    // ✅ NEW: Set status
-    public void setStatus(boolean isOn) {
-        this.isOn = isOn;
     }
 
     @Override
