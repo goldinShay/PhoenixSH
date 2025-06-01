@@ -10,7 +10,7 @@ git push https://goldinShay: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@github.com/
 
 **************
 device: Name
-        Type: Smoke Detectors Door-Cam, Parking-cam, parking door motor, Lights, Heater, Stove, dish washer, washing machine, Dryer, iRobot, Current sensor/meter, Ceiling-fan (Updatable)
+        Type: Sensor, Door-Cam, Parking-cam, garage door motor, Lights, Heater, Stove, dish washer, washing machine, Dryer, iRobot, Current sensor/meter, Ceiling-fan (Updatable)
         Version (Updatable)
         Actions (Updatable)
         Output Target (Updatable)
@@ -29,7 +29,7 @@ It would be handy if each devives stimulates its behavior on its own thread, sho
 
 
 Thermostat - Home heater controller on/off notifications on thresholds and temp read every 60 sec
-*MISSING SENSORS: Temp, Light, Noise, smoke, volume (Updatable)
+*MISSING SENSORS: Temp, Light, Noise, smoke, volumetric (Updatable)
 
 **********************add a reset list to the device menu options
 
@@ -41,7 +41,22 @@ Thermostat - Home heater controller on/off notifications on thresholds and temp 
         addDevice(homeThermostat);
         
         
-After adding multiple devices with similar names (like Light, Light2, etc.), test:
+Need to connect to local time
+All Devices need turn On/Off (+isOn?) ✔
+What if name already exist?
+             TYPE  |  Returns   |     Example
+Add SENSORS: Temp    Double            25.69
+              CO2     int (ppm)         450
+             Light    Bool           Day/Night
+             Noise    Bool       Hand-Clap detected
+             Smoke    Bool        Smoke detected
+          volumetric  Bool        Person in room
+          
+Add Devices:    TYPE      |    Tasks             |    Messages
+          Washing Machine   Start, Stop            Task status, task time, out of detergent / softner
+                Dryer       Start, Stop            Task status, task time   
+        
+tests:
 
 Deleting by exact name
 

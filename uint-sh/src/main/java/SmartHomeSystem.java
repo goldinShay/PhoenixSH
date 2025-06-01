@@ -1,4 +1,6 @@
 import java.util.*;
+import java.time.Clock; // ✅ Used for consistent time management
+import java.time.ZonedDateTime;
 
 public class SmartHomeSystem {
 
@@ -6,18 +8,24 @@ public class SmartHomeSystem {
     private static final List<Thread> deviceThreads = new ArrayList<>();
     private static final Scanner scanner = new Scanner(System.in);
     private static final NotificationService notificationService = new NotificationService();
+    private static final Clock clock = ClockUtil.getClock(); // ✅ Shared Clock instance
 
     public static void main(String[] args) {
         Scheduler scheduler = new Scheduler();
-        // Load devices at startup
+
+        log("📦 Loading devices...");
         devices.addAll(DeviceStorage.loadDevices(notificationService));
+
         for (Device device : devices) {
             Thread thread = new Thread(device);
             deviceThreads.add(thread);
             thread.start();
+            log("🔌 Started device thread: " + device.getName() + " [" + device.getId() + "]");
         }
 
         boolean running = true;
+        log("🚀 Smart Home System started");
+
         while (running) {
             System.out.println("\n=== Smart Home Main Menu ===");
             System.out.println("1 - Devices");
@@ -28,21 +36,15 @@ public class SmartHomeSystem {
             String choice = scanner.nextLine();
 
             switch (choice) {
-                case "1":
-                    showDevicesMenu();
-                    break;
-                case "2":
-                    System.out.println("[Monitor menu coming soon]");
-                    break;
-                case "3":
-                    System.out.println("[Schedule menu coming soon]");
-                    break;
-                case "4":
+                case "1" -> showDevicesMenu();
+                case "2" -> System.out.println("[Monitor menu coming soon]");
+                case "3" -> System.out.println("[Schedule menu coming soon]");
+                case "4" -> {
                     running = false;
                     DeviceStorage.saveDevices(devices); // Save on exit
-                    break;
-                default:
-                    System.out.println("Invalid option. Please choose 1-4.");
+                    log("💾 Devices saved before exit.");
+                }
+                default -> System.out.println("Invalid option. Please choose 1-4.");
             }
         }
 
@@ -50,8 +52,12 @@ public class SmartHomeSystem {
             t.interrupt();
         }
 
-        System.out.println("Smart Home Simulation stopped.");
+        log("🛑 Smart Home Simulation stopped.");
         scanner.close();
+    }
+
+    private static void log(String message) {
+        System.out.println("[" + ClockUtil.getCurrentTimestamp() + "] " + message);
     }
 
     private static void showDevicesMenu() {
@@ -67,23 +73,12 @@ public class SmartHomeSystem {
             String choice = scanner.nextLine();
 
             switch (choice) {
-                case "1":
-                    listDevices();
-                    break;
-                case "2":
-                    addDeviceInteractive();
-                    break;
-                case "3":
-                    updateDeviceInteractive();
-                    break;
-                case "4":
-                    removeDeviceInteractive();
-                    break;
-                case "5":
-                    back = true;
-                    break;
-                default:
-                    System.out.println("Invalid option. Please choose 1-5.");
+                case "1" -> listDevices();
+                case "2" -> addDeviceInteractive();
+                case "3" -> updateDeviceInteractive();
+                case "4" -> removeDeviceInteractive();
+                case "5" -> back = true;
+                default -> System.out.println("Invalid option. Please choose 1-5.");
             }
         }
     }
@@ -101,11 +96,13 @@ public class SmartHomeSystem {
         }
     }
 
+    // ✅ Uses Clock-aware constructor
     private static void addDevice(Device device) {
         devices.add(device);
         Thread thread = new Thread(device);
         deviceThreads.add(thread);
         thread.start();
+        log("➕ Added and started new device: " + device.getName() + " [" + device.getId() + "]");
         DeviceStorage.saveDevices(devices);
     }
 
@@ -120,18 +117,15 @@ public class SmartHomeSystem {
         String name = scanner.nextLine();
 
         switch (typeChoice) {
-            case "1":
-                addDevice(new Light(name));
-                break;
-            case "2":
+            case "1" -> addDevice(new Light(name, clock));
+            case "2" -> {
                 System.out.print("Enter min temperature: ");
                 double minTemp = Double.parseDouble(scanner.nextLine());
                 System.out.print("Enter max temperature: ");
                 double maxTemp = Double.parseDouble(scanner.nextLine());
-                addDevice(new Thermostat(name, minTemp, maxTemp, notificationService));
-                break;
-            default:
-                System.out.println("Invalid device type.");
+                addDevice(new Thermostat(name, minTemp, maxTemp, notificationService, clock));
+            }
+            default -> System.out.println("Invalid device type.");
         }
     }
 
@@ -148,8 +142,12 @@ public class SmartHomeSystem {
 
         if (toRemove.isPresent()) {
             Device removed = toRemove.get();
+
+            // ✅ Mark as removed before deleting
+            removed.markAsRemoved(clock);
+
             devices.remove(removed);
-            System.out.println("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
+            log("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
             DeviceStorage.saveDevices(devices);
         } else {
             System.out.println("❌ No device found with that ID or name.");
@@ -190,10 +188,9 @@ public class SmartHomeSystem {
                 }
             }
 
-            System.out.println("✅ Device updated.");
+            log("✏️ Device updated: " + device.getName() + " [" + device.getId() + "]");
             DeviceStorage.saveDevices(devices);
-        }
-        else {
+        } else {
             System.out.println("❌ No device found with that ID or name.");
         }
     }

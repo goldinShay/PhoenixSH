@@ -1,3 +1,0 @@
-Light|L001|Front Door
-Thermostat|T002|Basement|thermostat|14.77108807022107|25.0
-Light|L003|Roof Main

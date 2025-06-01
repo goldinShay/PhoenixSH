@@ -1,3 +1,6 @@
+import java.time.Clock;
+import java.time.ZonedDateTime;
+
 // Base class for all devices
 public abstract class Device implements Runnable {
     protected String deviceId;
@@ -5,17 +8,25 @@ public abstract class Device implements Runnable {
     protected String type;
     private boolean isOn;
 
-    public Device(String deviceId, String name, String type) {
+    private final Clock clock;
+
+    private ZonedDateTime createdAt;
+    private ZonedDateTime updatedAt;
+    private ZonedDateTime removedAt;
+
+    public Device(String deviceId, String name, String type, Clock clock) {
         this.deviceId = deviceId;
         this.name = name;
         this.type = type;
+        this.clock = clock;
+        this.createdAt = ZonedDateTime.now(clock);
+        this.updatedAt = createdAt;
     }
 
     public String getDeviceId() {
         return deviceId;
     }
 
-    // Added for consistency with getName() in menus etc.
     public String getId() {
         return deviceId;
     }
@@ -24,31 +35,50 @@ public abstract class Device implements Runnable {
         return name;
     }
 
-    // ✅ Added setter so devices can be renamed during edit
     public void setName(String name) {
         this.name = name;
+        this.updatedAt = ZonedDateTime.now(clock);
     }
 
     public String getType() {
         return type;
     }
 
-    // ✅ Optional: if you'll ever want to change type too in the future
     public void setType(String type) {
         this.type = type;
+        this.updatedAt = ZonedDateTime.now(clock);
     }
 
     public void turnOn() {
         isOn = true;
+        this.updatedAt = ZonedDateTime.now(clock);
     }
 
     public void turnOff() {
         isOn = false;
+        this.updatedAt = ZonedDateTime.now(clock);
     }
 
     public boolean isOn() {
         return isOn;
     }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public ZonedDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public ZonedDateTime getRemovedAt() {
+        return removedAt;
+    }
+
+    public void markAsRemoved(Clock clock) {
+        this.removedAt = ZonedDateTime.now(clock);
+    }
+
 
     public abstract void simulate();
 

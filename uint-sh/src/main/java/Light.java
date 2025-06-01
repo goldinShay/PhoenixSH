@@ -1,47 +1,46 @@
+import java.time.Clock;
+
 public class Light extends Device {
 
-    private boolean isOn;
     private static int counter = 1;
+    private boolean isOn;
 
     // ID generator (L001, L002, ...)
     private static String generateId() {
         return "L" + String.format("%03d", counter++);
     }
-
-    // Constructor with auto-generated ID
-    public Light(String name) {
-        super(generateId(), name, "light");
-        this.isOn = false;
-    }
-
-    // Constructor with provided ID (used during deserialization)
-    public Light(String id, String name) {
-        super(id, name, "light");
-        this.isOn = false;
-    }
-
-    // ✅ NEW: Set name
-    public void setName(String name) {
-        this.name = name;
-    }
-
     @Override
     public String toDataString() {
         return "Light|" + getId() + "|" + getName();
     }
 
-    public static Light fromDataString(String[] parts) {
+    // Constructor with name + clock (auto-generates ID)
+    public Light(String name, Clock clock) {
+        super(generateId(), name, "light", clock);
+        this.isOn = false;
+    }
+
+    // Optional: Constructor with explicit ID
+    public Light(String id, String name, Clock clock) {
+        super(id, name, "light", clock);
+        this.isOn = false;
+    }
+
+
+
+    public static Light fromDataString(String[] parts, Clock clock) {
         if (parts == null || parts.length < 3) {
             throw new IllegalArgumentException("Invalid data string: not enough parts to create a Light.");
         }
 
         String id = parts[1];
         String name = parts[2];
-        return new Light(id, name);
+        return new Light(id, name, clock);  // ✅ Now clock is passed in
     }
+
 
     @Override
     public void simulate() {
-        // You could add a flicker simulation or toggle on/off here later
+        // Optional: add simulation logic
     }
 }
