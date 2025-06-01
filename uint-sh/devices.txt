@@ -1,4 +1,3 @@
 Light|L001|Front Door
-Light|L002|Living_Room_Main
-Thermostat|T001|Basement|thermostat|13.023388875672577|25.0
-Thermostat|T002|Attic|thermostat|14.836763863711122|25.0
+Thermostat|T001|Basement|thermostat|14.007486589620234|25.0
+WashingMachine|WM001|FamilyWM|Bosch|BWM142025

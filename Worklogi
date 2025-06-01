@@ -41,9 +41,10 @@ Thermostat - Home heater controller on/off notifications on thresholds and temp 
         addDevice(homeThermostat);
         
         
-Need to connect to local time
+Need to connect to global time ✔
 All Devices need turn On/Off (+isOn?) ✔
 What if name already exist?
+
              TYPE  |  Returns   |     Example
 Add SENSORS: Temp    Double            25.69
               CO2     int (ppm)         450

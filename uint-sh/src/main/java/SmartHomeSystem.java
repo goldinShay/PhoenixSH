@@ -106,15 +106,27 @@ public class SmartHomeSystem {
         DeviceStorage.saveDevices(devices);
     }
 
+    private static boolean nameExists(String name) {
+        return devices.stream()
+                .anyMatch(device -> device.getName().equalsIgnoreCase(name));
+    }
+
+
     private static void addDeviceInteractive() {
         System.out.println("Choose device type:");
         System.out.println("1 - Light");
         System.out.println("2 - Thermostat");
+        System.out.println("3 - Washing Machine");
         System.out.print("Enter choice: ");
         String typeChoice = scanner.nextLine();
 
         System.out.print("Enter device name: ");
-        String name = scanner.nextLine();
+        String name = scanner.nextLine().trim();
+
+        if (nameExists(name)) {
+            System.out.println("❌ A device with this name already exists. Please choose a different name.");
+            return;
+        }
 
         switch (typeChoice) {
             case "1" -> addDevice(new Light(name, clock));
@@ -125,9 +137,18 @@ public class SmartHomeSystem {
                 double maxTemp = Double.parseDouble(scanner.nextLine());
                 addDevice(new Thermostat(name, minTemp, maxTemp, notificationService, clock));
             }
+            case "3" -> {
+                System.out.print("Enter brand: ");
+                String brand = scanner.nextLine().trim();
+                System.out.print("Enter model: ");
+                String model = scanner.nextLine().trim();
+                addDevice(new WashingMachine(name, brand, model, clock));
+            }
             default -> System.out.println("Invalid device type.");
         }
     }
+
+
 
     private static void removeDeviceInteractive() {
         listDevices();
@@ -165,33 +186,52 @@ public class SmartHomeSystem {
                 .filter(d -> d.getId().equalsIgnoreCase(input))
                 .findFirst();
 
-        if (toUpdate.isPresent()) {
-            Device device = toUpdate.get();
-
-            System.out.print("Enter new name for the device (or leave blank to keep '" + device.getName() + "'): ");
-            String newName = scanner.nextLine();
-            if (!newName.trim().isEmpty()) {
-                device.setName(newName.trim());
-            }
-
-            if (device instanceof Thermostat thermostat) {
-                System.out.print("Enter new temperature (current: " + thermostat.getTemperature() + "): ");
-                String tempStr = scanner.nextLine();
-                if (!tempStr.trim().isEmpty()) {
-                    thermostat.setTemperature(Double.parseDouble(tempStr));
-                }
-
-                System.out.print("Enter new threshold (current: " + thermostat.getThreshold() + "): ");
-                String thresholdStr = scanner.nextLine();
-                if (!thresholdStr.trim().isEmpty()) {
-                    thermostat.setThreshold(Double.parseDouble(thresholdStr));
-                }
-            }
-
-            log("✏️ Device updated: " + device.getName() + " [" + device.getId() + "]");
-            DeviceStorage.saveDevices(devices);
-        } else {
-            System.out.println("❌ No device found with that ID or name.");
+        if (toUpdate.isEmpty()) {
+            System.out.println("❌ No device found with that ID.");
+            return;
         }
+
+        Device device = toUpdate.get();
+
+        // === Handle Name Update ===
+        System.out.print("Enter new name for the device (or leave blank to keep '" + device.getName() + "'): ");
+        String newName = scanner.nextLine().trim();
+
+        if (!newName.isEmpty()) {
+            boolean nameTaken = devices.stream()
+                    .anyMatch(d -> !d.getId().equals(device.getId()) && d.getName().equalsIgnoreCase(newName));
+            if (nameTaken) {
+                System.out.println("❌ A device with that name already exists. Please choose another name.");
+                return;
+            }
+            device.setName(newName);
+        }
+
+        // === Handle Thermostat-Specific Update ===
+        if (device instanceof Thermostat thermostat) {
+            System.out.print("Enter new temperature (current: " + thermostat.getTemperature() + "): ");
+            String tempStr = scanner.nextLine().trim();
+            if (!tempStr.isEmpty()) {
+                try {
+                    thermostat.setTemperature(Double.parseDouble(tempStr));
+                } catch (NumberFormatException e) {
+                    System.out.println("⚠️ Invalid temperature input. Skipping.");
+                }
+            }
+
+            System.out.print("Enter new threshold (current: " + thermostat.getThreshold() + "): ");
+            String thresholdStr = scanner.nextLine().trim();
+            if (!thresholdStr.isEmpty()) {
+                try {
+                    thermostat.setThreshold(Double.parseDouble(thresholdStr));
+                } catch (NumberFormatException e) {
+                    System.out.println("⚠️ Invalid threshold input. Skipping.");
+                }
+            }
+        }
+
+        log("✏️ Device updated: " + device.getName() + " [" + device.getId() + "]");
+        DeviceStorage.saveDevices(devices);
     }
+
 }
