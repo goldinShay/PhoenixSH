@@ -18,7 +18,7 @@ public class Thermostat extends Device {
 
     // ✅ Used by the menu: auto-generates ID
     public Thermostat(String name, double temperature, double threshold, NotificationService notificationService, Clock clock) {
-        super(generateId(), name, "devices.devcs.Thermostat", clock);
+        super(generateId(), name, "devices.Thermostat", clock);
         this.temperature = temperature;
         this.threshold = threshold;
         this.notificationService = notificationService;
@@ -27,7 +27,7 @@ public class Thermostat extends Device {
     // ✅ Used by deserialization (e.g., from file)
 // 🔀 Reordered to avoid clash: temperature, threshold, THEN id
     public Thermostat(double temperature, double threshold, String id, NotificationService notificationService, Clock clock) {
-        super(id, "devices.devcs.Thermostat-" + id, "devices.devcs.Thermostat", clock);
+        super(id, "devices.Thermostat-" + id, "devices.Thermostat", clock);
         this.temperature = temperature;
         this.threshold = threshold;
         this.notificationService = notificationService;
@@ -35,7 +35,7 @@ public class Thermostat extends Device {
 
     // ✅ Possibly used internally — no change needed
     public Thermostat(String id, String name, Clock clock) {
-        super(id, name, "devices.devcs.Thermostat", clock);
+        super(id, name, "devices.Thermostat", clock);
         this.temperature = 20.0;
         this.threshold = 22.0;
         this.notificationService = null;
@@ -79,7 +79,7 @@ public class Thermostat extends Device {
     }
 
     public void status() {
-        System.out.println("📊 devices.devcs.Thermostat " + getName() +
+        System.out.println("📊 devices.Thermostat " + getName() +
                 " is " + (isOn() ? "On" : "Off") +
                 ", temperature: " + temperature + "°C, threshold: " + threshold + "°C");
     }
@@ -95,7 +95,7 @@ public class Thermostat extends Device {
             case "increase" -> increaseTemp();
             case "decrease" -> decreaseTemp();
             case "status" -> status();
-            default -> System.out.println("❓ Unknown action for devices.devcs.Thermostat: " + action);
+            default -> System.out.println("❓ Unknown action for devices.Thermostat: " + action);
         }
     }
 
@@ -111,7 +111,7 @@ public class Thermostat extends Device {
 
     public static Thermostat fromDataString(String[] parts, NotificationService ns, Clock clock) {
         if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid devices.devcs.Thermostat data: " + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid devices.Thermostat data: " + Arrays.toString(parts));
         }
 
         String id = parts[1];
@@ -127,7 +127,7 @@ public class Thermostat extends Device {
 
     @Override
     public String toString() {
-        return "devices.devcs.Thermostat {" +
+        return "devices.Thermostat {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
                 ", temperature=" + temperature +

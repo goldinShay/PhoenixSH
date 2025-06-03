@@ -28,12 +28,15 @@ public class SmartHomeSystem {
         log("📦 Loading devices...");
         devices.addAll(DeviceStorage.loadDevices(notificationService));
 
+        scheduler.startSchedulerLoop();
+
+
 // Turning L001 On for testing:
 
-//        for (devices.devcs.Device d : devices) {
-//            if (d instanceof devices.devcs.Light && d.getId().equalsIgnoreCase("L001")) {
+//        for (devices.Device d : devices) {
+//            if (d instanceof devices.Light && d.getId().equalsIgnoreCase("L001")) {
 //                d.setOn(true);
-//                log("🔦 devices.devcs.Light L001 (Front Door) was manually turned ON.");
+//                log("🔦 devices.Light L001 (Front Door) was manually turned ON.");
 //            }
 //        }
 
@@ -361,7 +364,7 @@ public class SmartHomeSystem {
             }
         }
 
-        log("✏️ devices.devcs.Device updated: " + device.getName() + " [" + device.getId() + "]");
+        log("✏️ devices.Device updated: " + device.getName() + " [" + device.getId() + "]");
         DeviceStorage.saveDevices(devices);
     }
 }

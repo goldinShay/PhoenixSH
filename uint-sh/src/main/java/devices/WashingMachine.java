@@ -16,7 +16,7 @@ public class WashingMachine extends Device {
 
     // ✅ Constructor for loading from saved data (brand/model provided)
     public WashingMachine(String id, String name, String brand, String model) {
-        super(id, name, "devices.devcs.WashingMachine", Clock.systemDefaultZone());
+        super(id, name, "devices.WashingMachine", Clock.systemDefaultZone());
         this.brand = brand;
         this.model = model;
         this.running = false;
@@ -24,15 +24,15 @@ public class WashingMachine extends Device {
 
     // ✅ Constructor for interactive creation (brand/model provided, id auto-generated)
     public WashingMachine(String name, String brand, String model, Clock clock) {
-        super(generateId(), name, "devices.devcs.WashingMachine", clock);
+        super(generateId(), name, "devices.WashingMachine", clock);
         this.brand = brand;
         this.model = model;
         this.running = false;
     }
 
-    // ✅ Constructor for devices.devcs.DeviceFactory use (brand/model unknown)
+    // ✅ Constructor for devices.DeviceFactory use (brand/model unknown)
     public WashingMachine(String id, String name, Clock clock) {
-        super(id, name, "devices.devcs.WashingMachine", clock);
+        super(id, name, "devices.WashingMachine", clock);
         this.brand = "Unknown";
         this.model = "Unknown";
         this.running = false;
@@ -74,7 +74,7 @@ public class WashingMachine extends Device {
 
     public static WashingMachine fromDataString(String[] parts, Clock clock) {
         if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid devices.devcs.WashingMachine data: " + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid devices.WashingMachine data: " + Arrays.toString(parts));
         }
         String id = parts[1];
         String name = parts[2];
@@ -85,7 +85,7 @@ public class WashingMachine extends Device {
 
     @Override
     public String toString() {
-        return "devices.devcs.WashingMachine {" +
+        return "devices.WashingMachine {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
                 ", brand='" + brand + '\'' +
@@ -115,7 +115,7 @@ public class WashingMachine extends Device {
                         + " and " + (running ? "Running" : "Idle"));
                 break;
             default:
-                System.out.println("❓ Unknown action for devices.devcs.WashingMachine: " + action);
+                System.out.println("❓ Unknown action for devices.WashingMachine: " + action);
         }
     }
 

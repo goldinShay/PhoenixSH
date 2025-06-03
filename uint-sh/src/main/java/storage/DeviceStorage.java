@@ -22,13 +22,15 @@ public class DeviceStorage {
                 String[] parts = line.split("\\|");
                 if (parts.length < 1) continue;
 
-                String type = parts[0];
+                String rawType = parts[0];
+                String type = rawType.contains(".") ? rawType.substring(rawType.lastIndexOf('.') + 1) : rawType;
+
                 switch (type) {
                     case "Light" -> loadedDevices.add(Light.fromDataString(parts, clock));
                     case "Thermostat" -> loadedDevices.add(Thermostat.fromDataString(parts, notificationService, clock));
                     case "WashingMachine" -> loadedDevices.add(WashingMachine.fromDataString(parts, clock));
                     case "Dryer" -> loadedDevices.add(Dryer.fromDataString(parts, clock));
-                    default -> System.out.println("❓ Unknown device type: " + type);
+                    default -> System.out.println("❓ Unknown device type: " + rawType);
                 }
             }
         } catch (IOException e) {
@@ -37,6 +39,7 @@ public class DeviceStorage {
 
         return loadedDevices;
     }
+
 
     public static void saveDevices(List<Device> devices) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {

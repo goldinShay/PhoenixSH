@@ -12,7 +12,7 @@ public class Dryer extends Device {
 
     // Constructor for loading from saved data
     public Dryer(String id, String name, String brand, String model) {
-        super(id, name, "devices.devcs.Dryer", Clock.systemDefaultZone());
+        super(id, name, "devices.Dryer", Clock.systemDefaultZone());
         this.brand = brand;
         this.model = model;
         this.running = false;
@@ -20,13 +20,13 @@ public class Dryer extends Device {
 
     // Constructor for interactive creation
     public Dryer(String name, String brand, String model, Clock clock) {
-        super(generateId(), name, "devices.devcs.Dryer", clock);
+        super(generateId(), name, "devices.Dryer", clock);
         this.brand = brand;
         this.model = model;
         this.running = false;
     }
     public Dryer(String id, String name, Clock clock) {
-        super(id, name, "devices.devcs.Dryer", clock);
+        super(id, name, "devices.Dryer", clock);
         this.brand = "Unknown";
         this.model = "Unknown";
         this.running = false;
@@ -43,19 +43,19 @@ public class Dryer extends Device {
             return;
         }
         if (running) {
-            System.out.println("🔥 devices.devcs.Dryer is already running.");
+            System.out.println("🔥 devices.Dryer is already running.");
         } else {
             running = true;
-            System.out.println("🧦 devices.devcs.Dryer started.");
+            System.out.println("🧦 devices.Dryer started.");
         }
     }
 
     public void stop() {
         if (running) {
             running = false;
-            System.out.println("🛑 devices.devcs.Dryer stopped.");
+            System.out.println("🛑 devices.Dryer stopped.");
         } else {
-            System.out.println("ℹ️ devices.devcs.Dryer is not running.");
+            System.out.println("ℹ️ devices.Dryer is not running.");
         }
     }
     @Override
@@ -78,9 +78,9 @@ public class Dryer extends Device {
 
     public static Dryer fromDataString(String[] parts, Clock clock) {
         if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid devices.devcs.Dryer data: " + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid devices.Dryer data: " + Arrays.toString(parts));
         }
-        String type = parts[0]; // Should be "devices.devcs.Dryer"
+        String type = parts[0]; // Should be "devices.Dryer"
         String id = parts[1];
         String name = parts[2];
         String brand = parts[3];
@@ -98,25 +98,25 @@ public class Dryer extends Device {
     public void simulate(String action) {
         switch (action.toLowerCase()) {
             case "start":
-                System.out.println("🚿 devices.devcs.Dryer " + getName() + " is now running.");
+                System.out.println("🚿 devices.Dryer " + getName() + " is now running.");
                 running = true;
                 break;
             case "stop":
-                System.out.println("⏹️ devices.devcs.Dryer " + getName() + " has stopped.");
+                System.out.println("⏹️ devices.Dryer " + getName() + " has stopped.");
                 running = false;
                 break;
             case "status":
-                System.out.println("📊 devices.devcs.Dryer " + getName() + " status: " + (running ? "Running" : "Idle"));
+                System.out.println("📊 devices.Dryer " + getName() + " status: " + (running ? "Running" : "Idle"));
                 break;
             default:
-                System.out.println("❓ Unknown action for devices.devcs.Dryer: " + action);
+                System.out.println("❓ Unknown action for devices.Dryer: " + action);
         }
     }
 
 
     @Override
     public String toString() {
-        return "devices.devcs.Dryer {" +
+        return "devices.Dryer {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
                 ", brand='" + brand + '\'' +

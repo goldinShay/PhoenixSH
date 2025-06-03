@@ -15,18 +15,18 @@ public class Light extends Device {
     }
     @Override
     public String toDataString() {
-        return "devices.devcs.Light|" + getId() + "|" + getName();
+        return "devices.Light|" + getId() + "|" + getName();
     }
 
     // Constructor with name + clock (auto-generates ID)
     public Light(String name, Clock clock) {
-        super(generateId(), name, "devices.devcs.Light", clock);
+        super(generateId(), name, "devices..Light", clock);
         this.isOn = false;
     }
 
     // Optional: Constructor with explicit ID
     public Light(String id, String name, Clock clock) {
-        super(id, name, "devices.devcs.Light", clock);
+        super(id, name, "devices.Light", clock);
         this.isOn = false;
     }
 
@@ -34,7 +34,7 @@ public class Light extends Device {
 
     public static Light fromDataString(String[] parts, Clock clock) {
         if (parts == null || parts.length < 3) {
-            throw new IllegalArgumentException("Invalid data string: not enough parts to create a devices.devcs.Light." + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid data string: not enough parts to create a devices.Light." + Arrays.toString(parts));
         }
 
         String id = parts[1];
@@ -59,17 +59,17 @@ public class Light extends Device {
         switch (action.toLowerCase()) {
             case "on":
                 turnOn();
-                System.out.println("💡 devices.devcs.Light " + getName() + " turned ON.");
+                System.out.println("💡 devices.Light " + getName() + " turned ON.");
                 break;
             case "off":
                 turnOff();
-                System.out.println("💡 devices.devcs.Light " + getName() + " turned OFF.");
+                System.out.println("💡 devices.Light " + getName() + " turned OFF.");
                 break;
             case "status":
-                System.out.println("📊 devices.devcs.Light " + getName() + " status: " + (isOn() ? "ON" : "OFF"));
+                System.out.println("📊 devices.Light " + getName() + " status: " + (isOn() ? "ON" : "OFF"));
                 break;
             default:
-                System.out.println("❓ Unknown action for devices.devcs.Light: " + action);
+                System.out.println("❓ Unknown action for devices.Light: " + action);
         }
     }
 
