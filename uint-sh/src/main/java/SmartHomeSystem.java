@@ -1,7 +1,18 @@
+import devices.*;
+import utils.ClockUtil;
+import storage.DeviceStorage;
+import utils.NotificationService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.time.Clock;
 
+
 public class SmartHomeSystem {
+
 
     private static final List<Device> devices = new ArrayList<>();
     private static final List<Thread> deviceThreads = new ArrayList<>();
@@ -9,11 +20,23 @@ public class SmartHomeSystem {
     private static final NotificationService notificationService = new NotificationService();
     private static final Clock clock = ClockUtil.getClock();
 
+    private static final Scheduler scheduler = new Scheduler();
+
     public static void main(String[] args) {
-        Scheduler scheduler = new Scheduler();
+
 
         log("📦 Loading devices...");
         devices.addAll(DeviceStorage.loadDevices(notificationService));
+
+// Turning L001 On for testing:
+
+//        for (devices.devcs.Device d : devices) {
+//            if (d instanceof devices.devcs.Light && d.getId().equalsIgnoreCase("L001")) {
+//                d.setOn(true);
+//                log("🔦 devices.devcs.Light L001 (Front Door) was manually turned ON.");
+//            }
+//        }
+
 
         for (Device device : devices) {
             Thread thread = new Thread(device);
@@ -38,7 +61,7 @@ public class SmartHomeSystem {
             switch (choice) {
                 case "1" -> showDevicesMenu();
                 case "2" -> System.out.println("[Monitor menu coming soon]");
-                case "3" -> System.out.println("[Schedule menu coming soon]");
+                case "3" -> showScheduleMenu();
                 case "4" -> toggleDevicePower();
                 case "5" -> {
                     running = false;
@@ -61,6 +84,70 @@ public class SmartHomeSystem {
         System.out.println("[" + ClockUtil.getCurrentTimestamp() + "] " + message);
     }
 
+    private static void showScheduleMenu() {
+        boolean back = false;
+
+        while (!back) {
+            System.out.println("\n=== Scheduler Menu ===");
+            System.out.println("1 - View Scheduled Tasks");
+            System.out.println("2 - Schedule a Device");
+            System.out.println("3 - Back");
+            System.out.print("Choose an option: ");
+            String input = scanner.nextLine();
+
+            switch (input) {
+                case "1" -> scheduler.printScheduledTasks();
+                case "2" -> scheduleDevicePower();
+                case "3" -> back = true;
+                default -> System.out.println("Invalid option. Please choose 1-3.");
+            }
+        }
+    }
+
+    private static void scheduleDevicePower() {
+        listDevices();
+        if (devices.isEmpty()) return;
+
+        System.out.print("Enter the ID of the device to schedule: ");
+        String id = scanner.nextLine().trim();
+
+        Optional<Device> deviceOpt = devices.stream()
+                .filter(d -> d.getId().equalsIgnoreCase(id))
+                .findFirst();
+
+        if (deviceOpt.isEmpty()) {
+            System.out.println("❌ No device found with that ID.");
+            return;
+        }
+
+        Device device = deviceOpt.get();
+
+        System.out.print("Enter time to execute (HH:mm, 24-hour): ");
+        String timeInput = scanner.nextLine().trim();
+        LocalTime time;
+        try {
+            time = LocalTime.parse(timeInput);
+        } catch (DateTimeParseException e) {
+            System.out.println("⚠️ Invalid time format. Use HH:mm format (e.g., 14:30).");
+            return;
+        }
+
+        LocalDateTime dateTime = LocalDateTime.of(LocalDate.now(), time);
+
+        System.out.print("Enter action (on/off): ");
+        String action = scanner.nextLine().trim().toLowerCase();
+
+        if (!action.equals("on") && !action.equals("off")) {
+            System.out.println("⚠️ Invalid action. Only 'on' or 'off' allowed.");
+            return;
+        }
+
+        scheduler.scheduleTask(device, action, dateTime, "none");
+        log("⏱️ Scheduled " + action.toUpperCase() + " for device " + device.getName() + " [" + device.getId() + "] at " + time);
+    }
+
+
+
     private static void showDevicesMenu() {
         boolean back = false;
         while (!back) {
@@ -70,7 +157,6 @@ public class SmartHomeSystem {
             System.out.println("3 - Update");
             System.out.println("4 - Remove");
             System.out.println("5 - Back");
-            System.out.println("6 - Toggle On/Off");
             System.out.print("Choose an option: ");
             String choice = scanner.nextLine();
 
@@ -80,7 +166,6 @@ public class SmartHomeSystem {
                 case "3" -> updateDeviceInteractive();
                 case "4" -> removeDeviceInteractive();
                 case "5" -> back = true;
-                case "6" -> toggleDevicePower();
                 default -> System.out.println("Invalid option. Please choose 1-6.");
             }
         }
@@ -100,24 +185,35 @@ public class SmartHomeSystem {
     }
 
     private static void toggleDevicePower() {
-        listDevices();
-        if (devices.isEmpty()) return;
+        List<Device> testableDevices = devices.stream()
+                .filter(d -> !d.isOn())
+                .toList();
+
+        if (testableDevices.isEmpty()) {
+            System.out.println("⚠️ No devices available for testing (all are ON).");
+            return;
+        }
+
+        System.out.println("\nDevices available for testing:");
+        testableDevices.forEach(device ->
+                System.out.println(device.getName() + " [" + device.getId() + "] | Status: OFF"));
 
         System.out.print("Enter device ID to test: ");
         String id = scanner.nextLine().trim();
 
-        Optional<Device> target = devices.stream()
+        Optional<Device> target = testableDevices.stream()
                 .filter(d -> d.getId().equalsIgnoreCase(id))
                 .findFirst();
 
         if (target.isPresent()) {
             Device device = target.get();
             log("🧪 Starting test for device: " + device.getName() + " [" + device.getId() + "]");
-            device.testDevice(); // ← THIS will call your updated method!
+            device.testDevice();
         } else {
-            System.out.println("❌ No device found with that ID.");
+            System.out.println("❌ No OFF device found with that ID. Make sure the device is OFF.");
         }
     }
+
 
 
     private static void addDevice(Device device) {
@@ -265,7 +361,7 @@ public class SmartHomeSystem {
             }
         }
 
-        log("✏️ Device updated: " + device.getName() + " [" + device.getId() + "]");
+        log("✏️ devices.devcs.Device updated: " + device.getName() + " [" + device.getId() + "]");
         DeviceStorage.saveDevices(devices);
     }
 }

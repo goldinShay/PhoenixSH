@@ -1,8 +1,10 @@
+package devices;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.List;
 
-// Base class for all devices
 public abstract class Device implements Runnable {
     protected String deviceId;
     protected String name;
@@ -11,9 +13,7 @@ public abstract class Device implements Runnable {
     private Instant lastOnTimestamp;
     private Instant lastOffTimestamp;
 
-
     private final Clock clock;
-
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
     private ZonedDateTime removedAt;
@@ -48,67 +48,25 @@ public abstract class Device implements Runnable {
         return type;
     }
 
+    public void setType(String type) {
+        this.type = type;
+        this.updatedAt = ZonedDateTime.now(clock);
+    }
+
+    public boolean isOn() {
+        return isOn;
+    }
+
+    public void setOn(boolean on) {
+        this.isOn = on;
+    }
+
     public Instant getLastOnTimestamp() {
         return lastOnTimestamp;
     }
 
     public Instant getLastOffTimestamp() {
         return lastOffTimestamp;
-    }
-
-
-    public void setType(String type) {
-        this.type = type;
-        this.updatedAt = ZonedDateTime.now(clock);
-    }
-
-    public void turnOn() {
-        isOn = true;
-        lastOnTimestamp = Instant.now(clock);
-        this.updatedAt = ZonedDateTime.now(clock);
-    }
-
-    public void turnOff() {
-        isOn = false;
-        lastOffTimestamp = Instant.now(clock);
-        this.updatedAt = ZonedDateTime.now(clock);
-    }
-    public void setOn(boolean on) {
-        this.isOn = on;
-    }
-
-    public void testDevice() {
-        System.out.println("🔧 Starting test for device: " + getName());
-
-        Thread testThread = new Thread(() -> {
-            try {
-                // Step 1: Turn ON
-                turnOn();
-                System.out.println("🟢 " + getName() + " status after turnOn: " + (isOn() ? "ON ✅" : "OFF ❌"));
-
-                // Step 2: Wait 10 seconds
-                Thread.sleep(10_000);
-
-                // Step 3: Turn OFF
-                turnOff();
-                System.out.println("🔴 " + getName() + " status after turnOff: " + (isOn() ? "ON ❌" : "OFF ✅"));
-
-                // Step 4: Done
-                System.out.println("✅ Test complete for device: " + getName());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("⚠️ Test interrupted for " + getName());
-            }
-        }, getName() + "-TestThread");
-
-        testThread.start();
-    }
-
-
-
-    public boolean isOn() {
-        return isOn;
     }
 
     public ZonedDateTime getCreatedAt() {
@@ -127,13 +85,58 @@ public abstract class Device implements Runnable {
         this.removedAt = ZonedDateTime.now(clock);
     }
 
+    public void turnOn() {
+        isOn = true;
+        lastOnTimestamp = Instant.now(clock);
+        this.updatedAt = ZonedDateTime.now(clock);
+    }
 
+    public void turnOff() {
+        isOn = false;
+        lastOffTimestamp = Instant.now(clock);
+        this.updatedAt = ZonedDateTime.now(clock);
+    }
+
+    public void testDevice() {
+        System.out.println("🔧 Starting test for device: " + getName());
+
+        Thread testThread = new Thread(() -> {
+            try {
+                turnOn();
+                System.out.println("🟢 " + getName() + " status after turnOn: " + (isOn() ? "ON ✅" : "OFF ❌"));
+                Thread.sleep(10_000);
+                turnOff();
+                System.out.println("🔴 " + getName() + " status after turnOff: " + (isOn() ? "ON ❌" : "OFF ✅"));
+                System.out.println("✅ Test complete for device: " + getName());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("⚠️ Test interrupted for " + getName());
+            }
+        }, getName() + "-TestThread");
+
+        testThread.start();
+    }
+
+    // 🔧 Called from the Scheduler to perform an action
+    public void performAction(String action) {
+        System.out.println("🎯 Performing scheduled action: " + action + " on device: " + getName());
+        simulate(action);
+    }
+
+    // 🔧 Required for menu task selection
+    public abstract List<String> getAvailableActions();
+
+    // 🔧 Executes one of those selected actions
+    public abstract void simulate(String action);
+
+    // 🔧 Called when just running default simulate()
     public abstract void simulate();
+
+    // 🔧 For saving device info in text file
+    public abstract String toDataString();
 
     @Override
     public void run() {
         simulate();
     }
-
-    public abstract String toDataString(); // Abstract method for persistence
 }
