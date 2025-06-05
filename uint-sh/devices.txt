@@ -1,8 +1,0 @@
-devices.Thermostat|T001|Basement|15.0|25.0
-devices.WashingMachine|WM001|FamilyWM|Bosch|BWM14025
-devices.Dryer|Dr001|FamilyDr|Bosch|BDR14025
-devices.Thermostat|T002|Roof|15.0|25.0
-devices.Thermostat|T003|Bath Room|16.0|25.0
-devices.WashingMachine|WM002|MyWM|bb|123
-devices.Dryer|Dr002|myDr|bc|234
-devices.Light|L001|Front Door

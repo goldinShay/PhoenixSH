@@ -1,32 +1,58 @@
 import devices.*;
-import utils.ClockUtil;
+import scheduler.ScheduledTask;
 import storage.DeviceStorage;
+import storage.TaskExcelStorage;
+import utils.ClockUtil;
 import utils.NotificationService;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.time.Clock;
 
 
 public class SmartHomeSystem {
 
 
-    private static final List<Device> devices = new ArrayList<>();
+
     private static final List<Thread> deviceThreads = new ArrayList<>();
     private static final Scanner scanner = new Scanner(System.in);
     private static final NotificationService notificationService = new NotificationService();
     private static final Clock clock = ClockUtil.getClock();
 
     private static final Scheduler scheduler = new Scheduler();
+    private static final Map<String, Device> devices =
+            DeviceStorage.loadDevices(new NotificationService());
+
+
+    public static void registerDevice(Device device) {
+        devices.put(device.getId(), device);
+    }
+
+    public static Device getDeviceById(String id) {
+        return devices.get(id);
+    }
+
+    public static Map<String, Device> getAllDevices() {
+
+        return devices;
+    }
+
 
     public static void main(String[] args) {
 
-
         log("📦 Loading devices...");
-        devices.addAll(DeviceStorage.loadDevices(notificationService));
+        NotificationService notificationService = new NotificationService();
+        Map<String, Device> devices = DeviceStorage.loadDevices(notificationService);
+
+        // ✅ Call this AFTER loading devices
+        Light.initializeLightCounter(devices);
+
+        log("📅 Loading scheduled tasks...");
+        Map<String, List<ScheduledTask>> tasks = TaskExcelStorage.loadTasks(devices);
+        scheduler.loadTasksFromExcel(tasks);
 
         scheduler.startSchedulerLoop();
 
@@ -41,7 +67,7 @@ public class SmartHomeSystem {
 //        }
 
 
-        for (Device device : devices) {
+        for (Device device : devices.values()) {
             Thread thread = new Thread(device);
             deviceThreads.add(thread);
             thread.start();
@@ -114,7 +140,7 @@ public class SmartHomeSystem {
         System.out.print("Enter the ID of the device to schedule: ");
         String id = scanner.nextLine().trim();
 
-        Optional<Device> deviceOpt = devices.stream()
+        Optional<Device> deviceOpt = devices.values().stream()
                 .filter(d -> d.getId().equalsIgnoreCase(id))
                 .findFirst();
 
@@ -179,7 +205,7 @@ public class SmartHomeSystem {
             System.out.println("No devices registered.");
         } else {
             System.out.println("\nRegistered Devices (sorted by ID):");
-            devices.stream()
+            devices.values().stream()
                     .sorted(Comparator.comparing(Device::getId))
                     .forEachOrdered(device ->
                             System.out.println(device.getName() + " [" + device.getId() + "] | Status: " + (device.isOn() ? "ON" : "OFF"))
@@ -187,8 +213,9 @@ public class SmartHomeSystem {
         }
     }
 
+
     private static void toggleDevicePower() {
-        List<Device> testableDevices = devices.stream()
+        List<Device> testableDevices = devices.values().stream()
                 .filter(d -> !d.isOn())
                 .toList();
 
@@ -220,7 +247,7 @@ public class SmartHomeSystem {
 
 
     private static void addDevice(Device device) {
-        devices.add(device);
+        devices.put(device.getId(), device);
         Thread thread = new Thread(device);
         deviceThreads.add(thread);
         thread.start();
@@ -229,7 +256,7 @@ public class SmartHomeSystem {
     }
 
     private static boolean nameExists(String name) {
-        return devices.stream()
+        return devices.values().stream()
                 .anyMatch(device -> device.getName().equalsIgnoreCase(name));
     }
 
@@ -282,13 +309,13 @@ public class SmartHomeSystem {
         System.out.print("Enter device ID to remove: ");
         String input = scanner.nextLine().trim();
 
-        Optional<Device> toRemove = devices.stream()
+        Optional<Device> toRemove = devices.values().stream()
                 .filter(d -> d.getId().equalsIgnoreCase(input))
                 .findFirst();
 
         if (toRemove.isPresent()) {
             Device removed = toRemove.get();
-            removed.markAsRemoved(clock);
+            removed.markAsRemoved();
             devices.remove(removed);
             log("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
             DeviceStorage.saveDevices(devices);
@@ -304,7 +331,7 @@ public class SmartHomeSystem {
         System.out.print("Enter device ID to update: ");
         String input = scanner.nextLine().trim();
 
-        Optional<Device> toUpdate = devices.stream()
+        Optional<Device> toUpdate = devices.values().stream()
                 .filter(d -> d.getId().equalsIgnoreCase(input))
                 .findFirst();
 
@@ -319,7 +346,7 @@ public class SmartHomeSystem {
         String newName = scanner.nextLine().trim();
 
         if (!newName.isEmpty()) {
-            boolean nameTaken = devices.stream()
+            boolean nameTaken = devices.values().stream()
                     .anyMatch(d -> !d.getId().equals(device.getId()) && d.getName().equalsIgnoreCase(newName));
             if (nameTaken) {
                 System.out.println("❌ A device with that name already exists. Please choose another name.");

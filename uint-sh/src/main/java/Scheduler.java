@@ -1,6 +1,7 @@
-
+import scheduler.ScheduledTask;
 import devices.Device;
 import devices.GenericDevice;
+import storage.TaskExcelStorage;
 import utils.ClockUtil;
 
 import java.io.*;
@@ -13,54 +14,15 @@ public class Scheduler {
 
     private static final String FILE_PATH = "/home/nira/Documents/Shay/Fleur/unit-sh/uint-sh/scheduler.txt";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm");
+    private static final long CHECK_INTERVAL_MS = 30 * 1000; // 💜 30 seconds (adjust as needed)
 
     private final Map<String, Device> deviceRegistry = new HashMap<>();
     private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
+    private final TaskExcelStorage excelStorage = new TaskExcelStorage();
     private Timer schedulerTimer;
 
-    // 👇 Removed task loading from constructor!
     public Scheduler() {
         System.out.println("📅 Scheduler created (no tasks loaded yet)");
-    }
-
-    // 👇 Call this AFTER device registration
-    public void loadTasksAfterDeviceRegistration() {
-        System.out.println("📂 Loading scheduled tasks from file...");
-
-        File file = new File(FILE_PATH);
-        if (!file.exists()) {
-            System.out.println("📭 No task file found.");
-            return;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length != 5) continue;
-
-                String id = parts[0];
-                String name = parts[1];
-                String action = parts[2];
-                LocalDateTime time = LocalDateTime.parse(parts[3], FORMATTER);
-                String repeat = parts[4];
-
-                Device realDevice = deviceRegistry.get(id);
-                if (realDevice == null) {
-                    System.out.println("⚠️ No registered device for ID " + id + " — using GenericDevice");
-                    Clock clock = ClockUtil.getClock();
-                    realDevice = new GenericDevice(id, name, "Generic", clock);
-                }
-
-                ScheduledTask task = new ScheduledTask(realDevice, action, time, repeat);
-                scheduledTasks.add(task);
-            }
-
-            System.out.println("✅ Loaded " + scheduledTasks.size() + " scheduled task(s).");
-
-        } catch (IOException e) {
-            System.out.println("❌ Failed to load tasks: " + e.getMessage());
-        }
     }
 
     public void registerDevice(Device device) {
@@ -98,17 +60,6 @@ public class Scheduler {
         return scheduledTasks;
     }
 
-    private void saveTasksToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            for (ScheduledTask task : scheduledTasks) {
-                writer.write(task.toFileString());
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("❌ Failed to save tasks: " + e.getMessage());
-        }
-    }
-
     public void printScheduledTasks() {
         if (scheduledTasks.isEmpty()) {
             System.out.println("📭 No scheduled tasks.");
@@ -122,16 +73,77 @@ public class Scheduler {
         }
     }
 
+    public void loadTasksAfterDeviceRegistration() {
+        System.out.println("📂 Loading scheduled tasks from file...");
+
+        File file = new File(FILE_PATH);
+        if (!file.exists()) {
+            System.out.println("📭 No task file found.");
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length != 5) continue;
+
+                String id = parts[0];
+                String name = parts[1];
+                String action = parts[2];
+                LocalDateTime time = LocalDateTime.parse(parts[3], FORMATTER);
+                String repeat = parts[4];
+
+                Device device = deviceRegistry.get(id);
+                if (device == null) {
+                    System.out.println("⚠️ No registered device for ID " + id + " — using GenericDevice");
+                    Clock clock = ClockUtil.getClock();
+                    device = new GenericDevice(id, name, "Generic", clock);
+                    deviceRegistry.put(id, device); // Optional: register it
+                }
+
+                ScheduledTask task = new ScheduledTask(device, action, time, repeat);
+                scheduledTasks.add(task);
+            }
+
+            System.out.println("✅ Loaded " + scheduledTasks.size() + " scheduled task(s).");
+
+        } catch (IOException e) {
+            System.out.println("❌ Failed to load tasks: " + e.getMessage());
+        }
+    }
+
+    public void loadTasksFromExcel(Map<String, List<ScheduledTask>> taskMap) {
+        int count = 0;
+        for (List<ScheduledTask> tasks : taskMap.values()) {
+            for (ScheduledTask task : tasks) {
+                String id = task.getDevice().getId();
+                Device realDevice = deviceRegistry.get(id);
+                if (realDevice != null) {
+                    task.setDevice(realDevice);
+                } else {
+                    System.out.println("⚠️ Excel task references unknown device ID " + id + " — using GenericDevice");
+                    Clock clock = ClockUtil.getClock();
+                    task.setDevice(new GenericDevice(id, task.getDevice().getName(), "Generic", clock));
+                }
+
+                scheduledTasks.add(task);
+                count++;
+            }
+        }
+        System.out.println("✅ Loaded " + count + " task(s) from Excel into scheduler.");
+    }
+
     public void startSchedulerLoop() {
-        schedulerTimer = new Timer(true); // Daemon thread
+        schedulerTimer = new Timer(true);
         schedulerTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 checkAndRunDueTasks();
             }
-        }, 0, 60 * 1000); // Every 60 seconds
+        }, 0, CHECK_INTERVAL_MS);
 
-        System.out.println("🕒 Scheduler loop started (checking every minute)");
+        System.out.println("🕒 Scheduler loop started (checking every " + (CHECK_INTERVAL_MS / 1000) + " seconds)");
     }
 
     private void checkAndRunDueTasks() {
@@ -175,60 +187,9 @@ public class Scheduler {
         }
     }
 
-    // Inner class remains the same
-    public static class ScheduledTask {
-        private Device device;
-        private String action;
-        private LocalDateTime time;
-        private String repeat;
-
-        public ScheduledTask(Device device, String action, LocalDateTime time, String repeat) {
-            this.device = device;
-            this.action = action;
-            this.time = time;
-            this.repeat = repeat;
-        }
-
-        public Device getDevice() {
-            return device;
-        }
-
-        public String getAction() {
-            return action;
-        }
-
-        public LocalDateTime getTime() {
-            return time;
-        }
-
-        public String getRepeat() {
-            return repeat;
-        }
-
-        public void setTime(LocalDateTime time) {
-            this.time = time;
-        }
-
-        public void setRepeat(String repeat) {
-            this.repeat = repeat;
-        }
-
-        public void setAction(String action) {
-            this.action = action;
-        }
-
-        public void setDevice(Device device) {
-            this.device = device;
-        }
-
-        @Override
-        public String toString() {
-            return "[" + time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "] "
-                    + device.getName() + " - " + action + " (Repeat: " + repeat + ")";
-        }
-
-        public String toFileString() {
-            return device.getId() + "|" + device.getName() + "|" + action + "|" + time.format(FORMATTER) + "|" + repeat;
-        }
+    private void saveTasksToFile() {
+        Map<String, List<ScheduledTask>> tasksByDeviceId = new HashMap<>();
+        tasksByDeviceId.put("default", scheduledTasks);
+        excelStorage.saveTasks(tasksByDeviceId);
     }
 }

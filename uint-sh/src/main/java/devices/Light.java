@@ -3,15 +3,16 @@ package devices;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class Light extends Device {
 
-    private static int counter = 1;
+    private static int lightCounter = 1;
     private boolean isOn;
 
     // ID generator (L001, L002, ...)
     private static String generateId() {
-        return "L" + String.format("%03d", counter++);
+        return "L" + String.format("%03d", lightCounter++);
     }
     @Override
     public String toDataString() {
@@ -40,6 +41,19 @@ public class Light extends Device {
         String id = parts[1];
         String name = parts[2];
         return new Light(id, name, clock);  // ✅ Now clock is passed in
+    }
+    public static void initializeLightCounter(Map<String, Device> devices) {
+        int max = 0;
+        for (Device d : devices.values()) {
+            if (d instanceof Light) {
+                String id = d.getId(); // e.g., "L002"
+                try {
+                    int num = Integer.parseInt(id.substring(1)); // "002" -> 2
+                    if (num > max) max = num;
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        lightCounter = max + 1;
     }
 
     @Override
