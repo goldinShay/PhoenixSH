@@ -25,6 +25,9 @@ public class ScheduledTask {
         this.repeat = repeat != null ? repeat.toLowerCase() : "none";
     }
 
+    public static void scheduleDevicePower() {
+    }
+
     // Getters
     public Device getDevice() {
         return device;

@@ -16,7 +16,9 @@ public abstract class Device implements Runnable {
     // 🏷️ Optional Metadata (Excel + SHS friendly)
     protected String brand;
     protected String model;
-    protected List<String> actions = new ArrayList<>();
+
+    // ✅ New: Enum-based Actions
+    private List<DeviceAction> actions = new ArrayList<>();
 
     // 🔄 Status
     private boolean isOn;
@@ -66,13 +68,17 @@ public abstract class Device implements Runnable {
         this.updatedAt = ZonedDateTime.now(clock);
     }
 
-    public void setActions(List<String> actions) {
-        if (!this.actions.equals(actions)) {
-            this.actions = new ArrayList<>(actions);
+    // ✅ Enum-based Actions
+    public List<DeviceAction> getActions() {
+        return new ArrayList<>(actions);
+    }
+
+    public void setActions(List<DeviceAction> deviceActions) {
+        if (!this.actions.equals(deviceActions)) {
+            this.actions = new ArrayList<>(deviceActions);
             this.updatedAt = ZonedDateTime.now(clock);
         }
     }
-
 
     // 🔒 Getters
     public String getId() {
@@ -84,7 +90,7 @@ public abstract class Device implements Runnable {
     }
 
     public String getType() {
-        return type;
+        return this.getClass().getSimpleName(); // will return "Light", not "devices.Light"
     }
 
     public String getBrand() {
@@ -93,10 +99,6 @@ public abstract class Device implements Runnable {
 
     public String getModel() {
         return model;
-    }
-
-    public List<String> getActions() {
-        return new ArrayList<>(actions);
     }
 
     public boolean isOn() {
@@ -140,7 +142,6 @@ public abstract class Device implements Runnable {
         }
     }
 
-
     public void markAsRemoved() {
         this.removedAt = ZonedDateTime.now(clock);
     }
@@ -151,7 +152,6 @@ public abstract class Device implements Runnable {
             else turnOff();
         }
     }
-
 
     // 🧪 Testing Helper
     public void testDevice() {

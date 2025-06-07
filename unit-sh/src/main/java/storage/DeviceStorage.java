@@ -1,26 +1,20 @@
 package storage;
 
+import devices.DeviceAction;
 import devices.Device;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import utils.NotificationService;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DeviceStorage {
 
-    private static final String EXCEL_FILE_NAME = "/home/nira/Documents/Shay/Fleur/unit-sh/uint-sh/DeviceList.xlsx";
-
-
-    public static Map<String, Device> loadDevices(NotificationService notificationService) {
-        Map<String, Device> devices = ExcelDeviceLoader.loadDevices(EXCEL_FILE_NAME);
-        System.out.println("✅ Final device map before returning: " + devices.keySet());
-        return devices;
-    }
+    private static final String EXCEL_FILE_NAME = "/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/DeviceList.xlsx";
 
 
     public static void saveDevices(Map<String, Device> devices) {
@@ -46,7 +40,12 @@ public class DeviceStorage {
                 row.createCell(2).setCellValue(device.getName());
                 row.createCell(3).setCellValue(device.getBrand());
                 row.createCell(4).setCellValue(device.getModel());
-                row.createCell(5).setCellValue(String.join(", ", device.getActions())); // comma-separated actions
+                row.createCell(5).setCellValue(
+                        device.getActions().stream()
+                                .map(DeviceAction::name) // convert Action enum to String
+                                .collect(Collectors.joining(", "))
+                );
+
             }
 
             System.out.println("📂 Saving to file: " + EXCEL_FILE_NAME);

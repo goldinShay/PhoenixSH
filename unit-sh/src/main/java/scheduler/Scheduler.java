@@ -1,8 +1,7 @@
-import org.apache.poi.ss.usermodel.*;
-import scheduler.ScheduledTask;
+package scheduler;
+
 import devices.Device;
 import devices.GenericDevice;
-import storage.TaskExcelStorage;
 import utils.ClockUtil;
 
 import java.io.*;
@@ -19,11 +18,10 @@ public class Scheduler {
 
     private final Map<String, Device> deviceRegistry = new HashMap<>();
     private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
-    private final TaskExcelStorage excelStorage = new TaskExcelStorage();
     private Timer schedulerTimer;
 
     public Scheduler() {
-        System.out.println("📅 Scheduler created (no tasks loaded yet)");
+        System.out.println("📅 scheduler.Scheduler created (no tasks loaded yet)");
     }
 
     public void registerDevice(Device device) {
@@ -118,7 +116,7 @@ public class Scheduler {
         }
     }
 
-    
+
 
 
 
@@ -133,7 +131,7 @@ public class Scheduler {
             }
         }, 0, CHECK_INTERVAL_MS);
 
-        System.out.println("🕒 Scheduler loop started (checking every " + (CHECK_INTERVAL_MS / 1000) + " seconds)");
+        System.out.println("🕒 scheduler.Scheduler loop started (checking every " + (CHECK_INTERVAL_MS / 1000) + " seconds)");
     }
 
     private void checkAndRunDueTasks() {
@@ -178,9 +176,6 @@ public class Scheduler {
     }
 
     private void saveTasksToFile() {
-        Map<String, List<ScheduledTask>> tasksByDeviceId = new HashMap<>();
-        tasksByDeviceId.put("default", scheduledTasks);
-        excelStorage.saveTasks(tasksByDeviceId);
     }
 
     private String normalizeId(String id) {
