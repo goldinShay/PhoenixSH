@@ -5,7 +5,8 @@ public enum DeviceAction {
     START, STOP,
     TEMP_UP, TEMP_DOWN,
     VOLUME_UP, VOLUME_DOWN,
-    CHANNEL_UP, CHANNEL_DOWN;
+    CHANNEL_UP, CHANNEL_DOWN,
+    STATUS;
 
     public static DeviceAction fromString(String input) {
         return switch (input.trim().toUpperCase()) {

@@ -6,6 +6,9 @@ import utils.ClockUtil;
 import utils.NotificationService;
 import utils.DeviceIdManager;
 import storage.XlCreator;
+import java.util.Map;
+import java.util.List;
+import devices.Device;
 
 import java.time.Clock;
 import java.util.*;
@@ -16,12 +19,10 @@ public class Menu {
     private static final Clock clock = ClockUtil.getClock();
     private static final NotificationService notificationService = new NotificationService();
 
-    public static void show() {
-        Map<String, Device> devices = new HashMap<>();
-        List<Thread> deviceThreads = new ArrayList<>();
+    public static void show(Map<String, Device> devices, List<Thread> deviceThreads) {
 
         while (true) {
-            System.out.println("\n=== WELCOME TO UNIT SHS ===");
+            System.out.println("\n=== WELCOME TO PhoenixSH ===");
             System.out.println("1. Device Menu");
             System.out.println("2. Monitor Device");
             System.out.println("3. Scheduler");
@@ -47,7 +48,8 @@ public class Menu {
         }
     }
 
-    public static void showDevicesMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
+    public static void showDevicesMenu(Map<String, Device> devices, List<Thread> deviceThreads)
+    {
         boolean back = false;
 
         while (!back) {
@@ -62,14 +64,27 @@ public class Menu {
 
             switch (choice) {
                 case "1" -> {
-                    List<Device> xlDevices = XlCreator.readDevices();
-                    if (xlDevices.isEmpty()) {
+                    System.out.println("🛠️ Debug - Devices in Storage: " + DeviceStorage.getDevices().size());
+
+                    if (DeviceStorage.getDevices().isEmpty()) {
                         System.out.println("📭 No devices found.");
                     } else {
-                        System.out.println("📋 Devices in Excel:");
-                        xlDevices.forEach(device -> System.out.println("- " + device));
+                        System.out.println("📋 Devices in System Memory:");
+                        System.out.printf("%-16s%-20s%-8s%-9s%n", "  TYPE", "NAME", "   ID", " STATE");
+                        System.out.println("-----------------------------------------------------");
+
+                        DeviceStorage.getDevices().values().forEach(device -> System.out.printf(
+                                "%-2s%-16s%-20s%-8s%-8s%n",
+                                "- ",
+                                device.getType(),
+                                device.getName(),
+                                device.getId(),
+                                device.getState()
+                        ));
                     }
                 }
+
+
 
                 case "2" -> addDeviceSubMenu(devices, deviceThreads);
 
@@ -86,7 +101,8 @@ public class Menu {
                     System.out.print("Enter new model: ");
                     String newModel = scanner.nextLine().trim();
 
-                    List<Device> currentDevices = XlCreator.readDevices();
+                    List<Device> currentDevices = XlCreator.loadDevicesFromExcel(); // ✅ Correct list
+
                     Optional<Device> optionalDevice = currentDevices.stream()
                             .filter(d -> d.getId().equals(updateId))
                             .findFirst();
@@ -107,6 +123,7 @@ public class Menu {
                         System.out.println("❌ Device not found.");
                     }
                 }
+
 
                 case "4" -> {
                     System.out.print("Enter ID of the device to remove: ");
@@ -129,6 +146,7 @@ public class Menu {
 
     private static void addDeviceSubMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
         System.out.println("\n=== Add a Device ===");
+
         DeviceType[] types = DeviceType.values();
         for (int i = 0; i < types.length; i++) {
             System.out.printf("%d - %s%n", i + 1, capitalize(types[i].toString()));
@@ -147,11 +165,11 @@ public class Menu {
 
             DeviceType selectedType = types[choice - 1];
 
-            // 👉 Ask for name
+            // 👉 Ask for device name
             System.out.print("Enter a name for the new " + capitalize(selectedType.toString()) + ": ");
             String name = scanner.nextLine().trim();
 
-            // ❗ Check for duplicate name
+            // 🚫 Check for duplicate name
             boolean nameExists = devices.values().stream()
                     .anyMatch(device -> device.getName().equalsIgnoreCase(name));
             if (nameExists) {
@@ -159,29 +177,42 @@ public class Menu {
                 return;
             }
 
-            // 🆔 Generate unique ID
-            String id = DeviceIdManager.getInstance().generateIdForType(selectedType);
+            // ✅ Generate unique ID using DeviceIdManager
+            // ✅ Retrieve existing IDs before generating a new one
+            Set<String> existingIds = new HashSet<>(DeviceStorage.getDevices().keySet());
+            String id = XlCreator.getNextAvailableId(selectedType.toString().substring(0, 2), existingIds); // 🔥 Ensure unique ID generation
 
-            // ⚙️ Instantiate device
-            Device newDevice = DeviceFactory.createDevice(selectedType, id, name); // assumes a factory method
 
-            // 💾 Add to map and list
+            // ⚙️ Instantiate the new device using the factory
+            Map<String, Device> allDevicesMap = DeviceFactory.getDevices();
+            Device newDevice = DeviceFactory.createDevice(
+                    selectedType,
+                    id,
+                    name,
+                    clock,
+                    allDevicesMap
+            );
+
+
+
+            // 💾 Add device to map and start its thread
             devices.put(id, newDevice);
             Thread thread = new Thread(newDevice);
             thread.start();
             deviceThreads.add(thread);
 
-            // 🧾 Save to Excel
+            // 📄 Persist to Excel
             XlCreator.writeDeviceToExcel(newDevice);
 
             System.out.printf("✅ %s (%s) added successfully!%n", name, id);
 
         } catch (NumberFormatException e) {
-            System.out.println("❌ Please enter a number.");
+            System.out.println("❌ Please enter a valid number.");
         } catch (Exception e) {
             System.out.println("❌ Failed to add device: " + e.getMessage());
         }
     }
+
 
 
     public static void showScheduleMenu(Map<String, Device> devices) {
@@ -217,55 +248,6 @@ public class Menu {
         }
     }
 
-    private static void addDeviceInteractive(Map<String, Device> devices, List<Thread> deviceThreads) {
-        System.out.println("Choose device type:");
-        System.out.println("1 - Light");
-        System.out.println("2 - Thermostat");
-        System.out.println("3 - Washing Machine");
-        System.out.println("4 - Dryer");
-        System.out.print("Enter choice: ");
-        String typeChoice = scanner.nextLine();
-
-        System.out.print("Enter device name: ");
-        String name = scanner.nextLine().trim();
-
-        if (nameExists(devices, name)) {
-            System.out.println("❌ A device with this name already exists. Please choose a different name.");
-            return;
-        }
-
-        Device device = null;
-        switch (typeChoice) {
-            case "1" -> device = new Light(name, clock);
-            case "2" -> {
-                System.out.print("Enter min temperature: ");
-                double minTemp = Double.parseDouble(scanner.nextLine());
-                System.out.print("Enter max temperature: ");
-                double maxTemp = Double.parseDouble(scanner.nextLine());
-                device = new Thermostat(name, minTemp, maxTemp, notificationService, clock);
-            }
-            case "3", "4" -> {
-                System.out.print("Enter brand: ");
-                String brand = scanner.nextLine().trim();
-                System.out.print("Enter model: ");
-                String model = scanner.nextLine().trim();
-                device = typeChoice.equals("3") ?
-                        new WashingMachine(name, brand, model, clock) :
-                        new Dryer(name, brand, model, clock);
-            }
-            default -> System.out.println("Invalid device type.");
-        }
-
-        if (device != null) {
-            devices.put(device.getId(), device);
-            Thread thread = new Thread(device);
-            deviceThreads.add(thread);
-            thread.start();
-            System.out.println("➕ Added and started device: " + device.getName() + " [" + device.getId() + "]");
-            DeviceStorage.saveDevices(devices);
-        }
-    }
-
     private static boolean nameExists(Map<String, Device> devices, String name) {
         return devices.values().stream()
                 .anyMatch(device -> device.getName().equalsIgnoreCase(name));
@@ -287,7 +269,8 @@ public class Menu {
             removed.markAsRemoved();
             devices.remove(removed);
             System.out.println("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
-            DeviceStorage.saveDevices(devices);
+            DeviceStorage.removeDevice(removed.getId());  // ✅ Uses built-in removal method
+
         } else {
             System.out.println("❌ No device found with that ID.");
         }

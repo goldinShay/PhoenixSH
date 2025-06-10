@@ -1,6 +1,7 @@
 package scheduler;
 
 import devices.Device;
+import devices.DeviceType;
 import devices.GenericDevice;
 import utils.ClockUtil;
 
@@ -101,7 +102,7 @@ public class Scheduler {
                 if (device == null) {
                     System.out.println("⚠️ No registered device for ID " + id + " — using GenericDevice");
                     Clock clock = ClockUtil.getClock();
-                    device = new GenericDevice(id, name, "Generic", clock);
+                    device = new GenericDevice(id, name, DeviceType.GENERIC, clock);
                     deviceRegistry.put(id, device);
                 }
 
@@ -115,12 +116,6 @@ public class Scheduler {
             System.out.println("❌ Failed to load tasks: " + e.getMessage());
         }
     }
-
-
-
-
-
-
 
     public void startSchedulerLoop() {
         schedulerTimer = new Timer(true);
@@ -176,6 +171,7 @@ public class Scheduler {
     }
 
     private void saveTasksToFile() {
+        // You can implement this method if needed to persist the scheduledTasks list
     }
 
     private String normalizeId(String id) {
@@ -194,5 +190,6 @@ public class Scheduler {
     }
 
     public void loadTasksFromExcel(Map<String, List<ScheduledTask>> tasks) {
+        // Placeholder for Excel task loading
     }
 }

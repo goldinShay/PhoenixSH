@@ -6,7 +6,7 @@ import java.util.List;
 
 public class GenericDevice extends Device {
 
-    public GenericDevice(String id, String name, String type, Clock clock) {
+    public GenericDevice(String id, String name, DeviceType type, Clock clock) {
         super(id, name, type, clock);
     }
 
@@ -49,12 +49,16 @@ public class GenericDevice extends Device {
 
     @Override
     public String toDataString() {
-        return String.join("|", getType(), getId(), getName());
+        return String.join("|",
+                getType().toString(),
+                getId(),
+                getName()
+        );
     }
 
     @Override
     public String toString() {
-        return "devices.devcs.GenericDevice {" +
+        return "devices.GenericDevice {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
                 ", type='" + getType() + '\'' +

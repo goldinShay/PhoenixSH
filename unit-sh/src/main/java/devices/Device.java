@@ -3,21 +3,23 @@ package devices;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public abstract class Device implements Runnable {
+
+    // 🧱 Enforce uniqueness
+    private static final Set<String> REGISTERED_IDS = new HashSet<>();
 
     // 🔑 Identity & Core Properties
     protected String deviceId;
     protected String name;
-    protected String type;
+    private DeviceType type;
 
-    // 🏷️ Optional Metadata (Excel + SHS friendly)
+    // 🏷️ Optional Metadata
     protected String brand;
     protected String model;
 
-    // ✅ New: Enum-based Actions
+    // ✅ Enum-based Actions
     private List<DeviceAction> actions = new ArrayList<>();
 
     // 🔄 Status
@@ -32,19 +34,33 @@ public abstract class Device implements Runnable {
     private ZonedDateTime removedAt;
     private static final int TEST_DURATION_MS = 5_000;
 
-    // ✅ Constructor
-    public Device(String deviceId, String name, String type, Clock clock) {
+    // ✅ Constructor with unique ID enforcement
+    public Device(String deviceId, String name, DeviceType type, Clock clock) {
+        if (REGISTERED_IDS.contains(deviceId)) {
+            throw new IllegalArgumentException("❌ Device ID already in use: " + deviceId);
+        }
+
         this.deviceId = deviceId;
         this.name = name;
         this.type = type;
         this.clock = clock;
         this.createdAt = ZonedDateTime.now(clock);
         this.updatedAt = createdAt;
+
+        REGISTERED_IDS.add(deviceId);
     }
 
-    // 🔓 Public Setters (used by ExcelDeviceLoader)
+    // 🔓 Public Setters (Enforce ID uniqueness)
     public void setId(String id) {
+        if (Objects.equals(this.deviceId, id)) return;
+
+        if (REGISTERED_IDS.contains(id)) {
+            throw new IllegalArgumentException("❌ Cannot assign duplicate device ID: " + id);
+        }
+
+        REGISTERED_IDS.remove(this.deviceId);
         this.deviceId = id;
+        REGISTERED_IDS.add(id);
         this.updatedAt = ZonedDateTime.now(clock);
     }
 
@@ -53,7 +69,7 @@ public abstract class Device implements Runnable {
         this.updatedAt = ZonedDateTime.now(clock);
     }
 
-    public void setType(String type) {
+    public void setType(DeviceType type) {
         this.type = type;
         this.updatedAt = ZonedDateTime.now(clock);
     }
@@ -68,7 +84,6 @@ public abstract class Device implements Runnable {
         this.updatedAt = ZonedDateTime.now(clock);
     }
 
-    // ✅ Enum-based Actions
     public List<DeviceAction> getActions() {
         return new ArrayList<>(actions);
     }
@@ -80,7 +95,6 @@ public abstract class Device implements Runnable {
         }
     }
 
-    // 🔒 Getters
     public String getId() {
         return deviceId;
     }
@@ -89,8 +103,8 @@ public abstract class Device implements Runnable {
         return name;
     }
 
-    public String getType() {
-        return this.getClass().getSimpleName(); // will return "Light", not "devices.Light"
+    public DeviceType getType() {
+        return type;
     }
 
     public String getBrand() {
@@ -99,6 +113,10 @@ public abstract class Device implements Runnable {
 
     public String getModel() {
         return model;
+    }
+
+    public String getState() {
+        return isOn ? "On" : "Off";
     }
 
     public boolean isOn() {
@@ -125,7 +143,6 @@ public abstract class Device implements Runnable {
         return removedAt;
     }
 
-    // ⚙️ State Changers
     public void turnOn() {
         if (!isOn) {
             isOn = true;
@@ -153,7 +170,6 @@ public abstract class Device implements Runnable {
         }
     }
 
-    // 🧪 Testing Helper
     public void testDevice() {
         System.out.println("🔧 Starting test for device: " + getName());
 
@@ -174,23 +190,28 @@ public abstract class Device implements Runnable {
         testThread.start();
     }
 
-    // ⏰ SHS Invoker
     public void performAction(String action) {
         System.out.println("🎯 Performing action: " + action + " on " + getName());
         simulate(action);
     }
 
-    // 🔌 Simulation Layer (implemented by subclasses)
     public abstract List<String> getAvailableActions();
-
     public abstract void simulate(String action);
-
     public abstract void simulate();
-
     public abstract String toDataString();
 
     @Override
     public void run() {
         simulate();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s | %s | %s | %s", getType(), getName(), getId(), isOn() ? "On" : "Off");
+    }
+
+    // 🧹 Resets registry (for tests or full reload)
+    public static void resetRegisteredIds() {
+        REGISTERED_IDS.clear();
     }
 }

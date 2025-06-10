@@ -16,32 +16,31 @@ public class Thermostat extends Device {
         return "T" + String.format("%03d", counter++);
     }
 
-    // ✅ Used by the menu: auto-generates ID
-    public Thermostat(String name, double temperature, double threshold, NotificationService notificationService, Clock clock) {
-        super(generateId(), name, "devices.Thermostat", clock);
+    // ✅ Used by the menu (auto-generates ID)
+    public Thermostat(String name, double temperature, double threshold,
+                      NotificationService notificationService, Clock clock) {
+        super(generateId(), name, DeviceType.THERMOSTAT, clock);
         this.temperature = temperature;
         this.threshold = threshold;
         this.notificationService = notificationService;
     }
 
-    // ✅ Used by deserialization (e.g., from file)
-// 🔀 Reordered to avoid clash: temperature, threshold, THEN id
-    public Thermostat(double temperature, double threshold, String id, NotificationService notificationService, Clock clock) {
-        super(id, "devices.Thermostat-" + id, "devices.Thermostat", clock);
+    // ✅ Used by deserialization (from file or saved data)
+    public Thermostat(double temperature, double threshold, String id,
+                      NotificationService notificationService, Clock clock) {
+        super(id, "Thermostat-" + id, DeviceType.THERMOSTAT, clock);
         this.temperature = temperature;
         this.threshold = threshold;
         this.notificationService = notificationService;
     }
 
-    // ✅ Possibly used internally — no change needed
+    // ✅ Used internally (fallback constructor with default values)
     public Thermostat(String id, String name, Clock clock) {
-        super(id, name, "devices.Thermostat", clock);
+        super(id, name, DeviceType.THERMOSTAT, clock);
         this.temperature = 20.0;
         this.threshold = 22.0;
         this.notificationService = null;
     }
-
-
 
     public void setTemperature(double temperature) {
         this.temperature = temperature;
@@ -79,7 +78,7 @@ public class Thermostat extends Device {
     }
 
     public void status() {
-        System.out.println("📊 devices.Thermostat " + getName() +
+        System.out.println("📊 Thermostat " + getName() +
                 " is " + (isOn() ? "On" : "Off") +
                 ", temperature: " + temperature + "°C, threshold: " + threshold + "°C");
     }
@@ -95,23 +94,24 @@ public class Thermostat extends Device {
             case "increase" -> increaseTemp();
             case "decrease" -> decreaseTemp();
             case "status" -> status();
-            default -> System.out.println("❓ Unknown action for devices.Thermostat: " + action);
+            default -> System.out.println("❓ Unknown action for Thermostat: " + action);
         }
     }
 
     @Override
     public void simulate() {
-        // Optional simulation loop
+        // Optional default simulation
     }
 
     @Override
     public String toDataString() {
-        return String.join("|", getType(), getId(), getName(), String.valueOf(temperature), String.valueOf(threshold));
+        return String.join("|", getType().name(), getId(), getName(),
+                String.valueOf(temperature), String.valueOf(threshold));
     }
 
     public static Thermostat fromDataString(String[] parts, NotificationService ns, Clock clock) {
         if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid devices.Thermostat data: " + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid Thermostat data: " + Arrays.toString(parts));
         }
 
         String id = parts[1];
@@ -120,14 +120,13 @@ public class Thermostat extends Device {
         double threshold = Double.parseDouble(parts[4]);
 
         Thermostat t = new Thermostat(temperature, threshold, id, ns, clock);
-        t.setName(name); // Preserve original name
+        t.setName(name); // Restore original name
         return t;
     }
 
-
     @Override
     public String toString() {
-        return "devices.Thermostat {" +
+        return "Thermostat {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
                 ", temperature=" + temperature +

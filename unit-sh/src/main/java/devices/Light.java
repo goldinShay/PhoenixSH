@@ -1,90 +1,120 @@
 package devices;
 
+import storage.DeviceStorage;
+import storage.XlCreator;
+
 import java.time.Clock;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Light extends Device {
 
-    private static int lightCounter = 1;
     private boolean isOn;
 
-    // ID generator (L001, L002, ...)
-    private static String generateId() {
-        return "L" + String.format("%03d", lightCounter++);
-    }
-    @Override
-    public String toDataString() {
-        return "devices.Light|" + getId() + "|" + getName();
+    // ID generator using XlCreator
+    public static String generateId(Set<String> allIds) {
+        System.out.println("🛠️ Debug - Existing IDs Before Generating New One: " + allIds);
+        return XlCreator.getNextAvailableId("LI", allIds);
     }
 
-    // Constructor with name + clock (auto-generates ID)
+
+    // Constructor with name + clock + all existing IDs
     public Light(String name, Clock clock) {
-        super(generateId(), name, "devices..Light", clock);
+        super(generateNewId(), name, DeviceType.LIGHT, clock);  // ✅ Call to `super()` comes first
         this.isOn = false;
     }
+
+    // 🌟 Static method to properly generate a unique ID
+    private static String generateNewId() {
+        Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet());  // ✅ Get stored IDs
+        return XlCreator.getNextAvailableId("LI", allIds);  // ✅ Generate a unique ID
+    }
+
+
+
 
     // Optional: Constructor with explicit ID
     public Light(String id, String name, Clock clock) {
-        super(id, name, "devices.Light", clock);
+        super(id, name, DeviceType.LIGHT, clock);
         this.isOn = false;
     }
 
-
+    // For serialization
+    @Override
+    public String toDataString() {
+        return getType() + "|" + getId() + "|" + getName();
+    }
 
     public static Light fromDataString(String[] parts, Clock clock) {
         if (parts == null || parts.length < 3) {
-            throw new IllegalArgumentException("Invalid data string: not enough parts to create a devices.Light." + Arrays.toString(parts));
+            throw new IllegalArgumentException("Invalid data string: not enough parts to create a Light. " + Arrays.toString(parts));
         }
 
         String id = parts[1];
         String name = parts[2];
-        return new Light(id, name, clock);  // ✅ Now clock is passed in
+        return new Light(id, name, clock);
     }
+
+    // Not needed anymore if using generateId with existing IDs
+    @Deprecated
     public static void initializeLightCounter(Map<String, Device> devices) {
-        int max = 0;
-        for (Device d : devices.values()) {
-            if (d instanceof Light) {
-                String id = d.getId(); // e.g., "L002"
-                try {
-                    int num = Integer.parseInt(id.substring(1)); // "002" -> 2
-                    if (num > max) max = num;
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        lightCounter = max + 1;
+        // No-op
     }
 
     @Override
     public List<String> getAvailableActions() {
-        return List.of("on", "off", "status");
+        return List.of(
+                DeviceAction.ON.name().toLowerCase(),
+                DeviceAction.OFF.name().toLowerCase(),
+                DeviceAction.STATUS.name().toLowerCase()
+        );
     }
-
-
 
     @Override
     public void simulate() {
-        // Optional: add simulation logic
+        // Optional logic
     }
 
     @Override
     public void simulate(String action) {
-        switch (action.toLowerCase()) {
-            case "on":
+        DeviceAction act;
+        try {
+            act = DeviceAction.fromString(action);
+        } catch (IllegalArgumentException e) {
+            System.out.println("❓ Unknown action for Light: " + action);
+            return;
+        }
+
+        switch (act) {
+            case ON:
                 turnOn();
-                System.out.println("💡 devices.Light " + getName() + " turned ON.");
+                System.out.println("💡 Light " + getName() + " turned ON.");
                 break;
-            case "off":
+            case OFF:
                 turnOff();
-                System.out.println("💡 devices.Light " + getName() + " turned OFF.");
+                System.out.println("💡 Light " + getName() + " turned OFF.");
                 break;
-            case "status":
-                System.out.println("📊 devices.Light " + getName() + " status: " + (isOn() ? "ON" : "OFF"));
+            case STATUS:
+                System.out.println("📊 Light " + getName() + " status: " + (isOn() ? "ON" : "OFF"));
                 break;
             default:
-                System.out.println("❓ Unknown action for devices.Light: " + action);
+                System.out.println("❓ Action not supported by Light: " + action);
         }
+    }
+
+    // Helper methods
+    @Override
+    public void turnOn() {
+        this.isOn = true;
+    }
+
+    @Override
+    public void turnOff() {
+        this.isOn = false;
+    }
+
+    @Override
+    public boolean isOn() {
+        return isOn;
     }
 
 }

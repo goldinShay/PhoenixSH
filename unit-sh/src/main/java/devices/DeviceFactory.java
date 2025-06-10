@@ -1,41 +1,67 @@
 package devices;
 
+import storage.DeviceStorage;
+import storage.XlCreator;
 import utils.NotificationService;
 
 import java.time.Clock;
+import java.util.*;
+
 
 public class DeviceFactory {
 
     private static final Clock clock = Clock.systemDefaultZone();
 
     // 🌟 The method you need — based on DeviceType enum
-    public static Device createDevice(DeviceType type, String id, String name) {
+    public static Device createDevice(
+            DeviceType type,
+            String id,
+            String name,
+            Clock clock,
+            Map<String, Device> allDevices
+    ) {
         switch (type) {
-            case LIGHT:
-                return new Light(id, name, clock);
-            case DRYER:
-                return new Dryer(id, name, clock);
-            case WASHING_MACHINE:
-                return new WashingMachine(id, name, clock);
-            case THERMOSTAT:
-                return new Thermostat(id, name, clock);
-            // Add more cases as needed
-            default:
-                throw new IllegalArgumentException("Unsupported device type: " + type);
+            case LIGHT -> {
+                Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet());  // ✅ Retrieve existing IDs
+                String newId = XlCreator.getNextAvailableId("LI", allIds);  // ✅ Generate unique ID
+                return new Light(newId, name, clock);  // ✅ Matches constructor correctly
+            }
+            case DRYER -> throw new UnsupportedOperationException("Dryer support coming soon!"); // ✅ Properly disables Dryer
+            case WASHING_MACHINE -> throw new UnsupportedOperationException("Washing Machine support coming soon!");
+            case THERMOSTAT -> throw new UnsupportedOperationException("Thermostat support coming soon!");
+            default -> throw new IllegalArgumentException("Unsupported device type: " + type);
         }
+
     }
+
 
     // 🧭 Optional fallback for Excel loader etc.
     public static Device createDeviceByType(String typeName) {
-        return createDeviceByType(typeName, "UNKNOWN_ID", "Unnamed Device");
+        return createDeviceByType(
+                typeName,
+                "UNKNOWN_ID",
+                "Unnamed Device",
+                Clock.systemDefaultZone(),                    // ⏰ Default clock
+                DeviceFactory.getDevices()                    // 🗺️ Default device map
+        );
     }
 
-    public static Device createDeviceByType(String typeName, String id, String name) {
+
+    public static Device createDeviceByType(String typeName, String id, String name, Clock clock, Map<String, Device> allDevices) {
         try {
-            DeviceType type = DeviceType.valueOf(typeName.toUpperCase());
-            return createDevice(type, id, name);
+            DeviceType type = DeviceType.fromString(typeName); // ✅ now uses your tested logic
+            System.out.println("🔍 DeviceFactory - Processing Type: '" + type + "' (Expected Types: " + Arrays.toString(DeviceType.values()) + ")");
+            return createDevice(type, id, name, clock, allDevices);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid or unsupported device type: " + typeName);
         }
     }
+
+
+    private static final Map<String, Device> devices = new HashMap<>();
+
+    public static Map<String, Device> getDevices() {
+        return devices;
+    }
+
 }
