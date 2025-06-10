@@ -76,13 +76,19 @@ public class XlCreator {
         Files.createDirectories(FILE_PATH.getParent());
 
         try (Workbook workbook = new XSSFWorkbook()) {
+            // ✅ Create TASKS sheet (unchanged)
             createSheetWithHeaders(workbook, TASKS_SHEET, "DEVICE ID", "DEVICE NAME", "ACTION", "SCHEDULED", "REPEAT");
-            createSheetWithHeaders(workbook, DEVICES_SHEET, "TYPE", "ID", "NAME", "BRAND", "MODEL", "ACTIONS");
+
+            // ✅ Create DEVICES sheet with new format
+            createSheetWithHeaders(workbook, DEVICES_SHEET,
+                    "TYPE", "ID", "NAME", "BRAND", "MODEL", "ACTIONS",
+                    "ADDED_TS", "UPDATED_TS", "REMOVED_TS"); // 🔥 New timestamp columns added
 
             saveWorkbook(workbook);
-            System.out.println("✅ Excel file created at: " + FILE_PATH);
+            System.out.println("✅ Excel file created with updated format at: " + FILE_PATH);
         }
     }
+
 
     public static void writeDeviceToExcel(Device device) {
         updateWorkbook(sheet -> {
@@ -147,12 +153,22 @@ public class XlCreator {
         row.createCell(0).setCellValue(device.getType().name());
         row.createCell(1).setCellValue(device.getId());
         row.createCell(2).setCellValue(device.getName());
-        row.createCell(3).setCellValue(device.getBrand());
-        row.createCell(4).setCellValue(device.getModel());
-        row.createCell(5).setCellValue(device.getActions().stream()
-                .map(DeviceAction::name)
-                .collect(Collectors.joining(", ")));
+        row.createCell(3).setCellValue(device.getBrand() != null ? device.getBrand() : "N/A");
+        row.createCell(4).setCellValue(device.getModel() != null ? device.getModel() : "N/A");
+
+        // 🌟 Ensure actions are stored correctly
+        List<String> actions = device.getAvailableActions();
+        System.out.println("🛠️ Debug - Writing Actions for " + device.getName() + ": " + actions);
+
+        row.createCell(5).setCellValue(String.join(", ", actions));
+
+        // 🌟 Timestamp entries
+        row.createCell(6).setCellValue(device.getAddedTimestamp() != null ? device.getAddedTimestamp() : "N/A");
+        row.createCell(7).setCellValue(device.getUpdatedTimestamp() != null ? device.getUpdatedTimestamp() : "N/A");
+        row.createCell(8).setCellValue(device.getRemovedTimestamp() != null ? device.getRemovedTimestamp() : "N/A");
     }
+
+
 
     private static Device parseDeviceRow(Row row) {
         if (row == null) {

@@ -2,9 +2,7 @@ package storage;
 
 import devices.Device;
 import devices.DeviceAction;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
@@ -57,45 +55,56 @@ public class DeviceStorage {
     }
 
     // 🌟 Save all devices to Excel
-    private static void saveDevices() {
+    private static void saveDevices() {;
+
         System.out.println("🛠️ Saving devices to Excel...");
-        try (Workbook workbook = new XSSFWorkbook()) {
+
+        try (Workbook workbook = new XSSFWorkbook(); FileOutputStream fos = new FileOutputStream(EXCEL_FILE_NAME)) {
             Sheet sheet = workbook.createSheet("Devices");
 
-            // 🔹 Write header row
-            Row header = sheet.createRow(0);
-            header.createCell(0).setCellValue("TYPE");
-            header.createCell(1).setCellValue("ID");
-            header.createCell(2).setCellValue("NAME");
-            header.createCell(3).setCellValue("BRAND");
-            header.createCell(4).setCellValue("MODEL");
-            header.createCell(5).setCellValue("ACTIONS");
+            // 🔹 Write header row dynamically to prevent future updates from missing fields
+            String[] headers = {"TYPE", "ID", "NAME", "BRAND", "MODEL", "ACTIONS", "ADDED_TS", "UPDATED_TS", "REMOVED_TS"};
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
 
             int rowIndex = 1;
             for (Device device : devices.values()) {
+                System.out.println("🛠️ Debug - Saving Added Timestamp for " + device.getName() + ": " + device.getAddedTimestamp()); // ✅ Verify timestamp before saving
+
                 Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(device.getType().name()); // ✅ Uses DeviceType name
+                row.createCell(0).setCellValue(device.getType().name());
                 row.createCell(1).setCellValue(device.getId());
                 row.createCell(2).setCellValue(device.getName());
-                row.createCell(3).setCellValue(device.getBrand());
-                row.createCell(4).setCellValue(device.getModel());
-                row.createCell(5).setCellValue(
-                        device.getActions().stream()
-                                .map(DeviceAction::name)
-                                .collect(Collectors.joining(", "))
-                );
+                row.createCell(3).setCellValue(device.getBrand() != null ? device.getBrand() : "N/A");
+                row.createCell(4).setCellValue(device.getModel() != null ? device.getModel() : "N/A");
+
+                Cell actionCell = row.createCell(5);
+                actionCell.setCellType(CellType.STRING);
+                actionCell.setCellValue(String.join(", ", device.getAvailableActions()).trim());
+
+                // 🌟 Ensure timestamp gets written properly
+                String addedTs = device.getAddedTimestamp();
+                System.out.println("🛠️ Debug - Writing ADDED_TS: " + addedTs); // 🔥 Extra verification before saving
+
+                row.createCell(6).setCellValue(addedTs != null && !addedTs.isEmpty() ? addedTs : "N/A");
+                row.createCell(7).setCellValue(device.getUpdatedTimestamp() != null ? device.getUpdatedTimestamp() : "N/A");
+                row.createCell(8).setCellValue(device.getRemovedTimestamp() != null ? device.getRemovedTimestamp() : "N/A");
             }
 
-            System.out.println("📂 Writing to file: " + EXCEL_FILE_NAME);
-            try (FileOutputStream fos = new FileOutputStream(EXCEL_FILE_NAME)) {
-                workbook.write(fos);
-            }
 
+
+
+            // 💾 Write workbook contents to file
+            workbook.write(fos);
             System.out.println("✅ Devices saved to Excel successfully.");
         } catch (IOException e) {
-            System.out.println("❌ Failed to save devices: " + e.getMessage());
+            System.err.println("❌ Failed to save devices: " + e.getMessage());
         }
     }
+
+
 
     public static List<Thread> getDeviceThreads() {
         return deviceThreads;

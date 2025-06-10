@@ -29,9 +29,10 @@ public abstract class Device implements Runnable {
 
     // 🕒 Timestamps
     private final Clock clock;
-    private ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
-    private ZonedDateTime removedAt;
+    private final ZonedDateTime addedTimestamp;  // ✅ Tracks when device was first created
+    private ZonedDateTime updatedTimestamp;  // ✅ Updates when device is modified
+    private ZonedDateTime removedTimestamp;  // ✅ Marks removal time
+
     private static final int TEST_DURATION_MS = 5_000;
 
     // ✅ Constructor with unique ID enforcement
@@ -44,11 +45,13 @@ public abstract class Device implements Runnable {
         this.name = name;
         this.type = type;
         this.clock = clock;
-        this.createdAt = ZonedDateTime.now(clock);
-        this.updatedAt = createdAt;
+        this.addedTimestamp = ZonedDateTime.now(clock); // ✅ Ensure timestamp is set on creation
+        this.updatedTimestamp = addedTimestamp; // ✅ First update matches creation time
 
         REGISTERED_IDS.add(deviceId);
+        System.out.println("🛠️ Debug - Device Created: " + this.name + " at " + this.addedTimestamp); // 🔥 Debugging print
     }
+
 
     // 🔓 Public Setters (Enforce ID uniqueness)
     public void setId(String id) {
@@ -61,27 +64,27 @@ public abstract class Device implements Runnable {
         REGISTERED_IDS.remove(this.deviceId);
         this.deviceId = id;
         REGISTERED_IDS.add(id);
-        this.updatedAt = ZonedDateTime.now(clock);
+        updateTimestamp();  // ✅ Timestamp update for ID change
     }
 
     public void setName(String name) {
         this.name = name;
-        this.updatedAt = ZonedDateTime.now(clock);
+        updateTimestamp();  // ✅ Timestamp update for name change
     }
 
     public void setType(DeviceType type) {
         this.type = type;
-        this.updatedAt = ZonedDateTime.now(clock);
+        updateTimestamp();  // ✅ Timestamp update for type change
     }
 
     public void setBrand(String brand) {
         this.brand = brand;
-        this.updatedAt = ZonedDateTime.now(clock);
+        updateTimestamp();  // ✅ Timestamp update for brand change
     }
 
     public void setModel(String model) {
         this.model = model;
-        this.updatedAt = ZonedDateTime.now(clock);
+        updateTimestamp();  // ✅ Timestamp update for model change
     }
 
     public List<DeviceAction> getActions() {
@@ -91,8 +94,29 @@ public abstract class Device implements Runnable {
     public void setActions(List<DeviceAction> deviceActions) {
         if (!this.actions.equals(deviceActions)) {
             this.actions = new ArrayList<>(deviceActions);
-            this.updatedAt = ZonedDateTime.now(clock);
+            updateTimestamp();  // ✅ Timestamp update for action change
         }
+    }
+
+    // 🌟 New Methods for Timestamp Tracking
+    public String getAddedTimestamp() {
+        return addedTimestamp != null ? addedTimestamp.toString() : "N/A"; // ✅ Ensures it's always a valid string
+    }
+
+    public String getUpdatedTimestamp() {
+        return updatedTimestamp != null ? updatedTimestamp.toString() : "N/A";
+    }
+
+    public String getRemovedTimestamp() {
+        return removedTimestamp != null ? removedTimestamp.toString() : "N/A";
+    }
+
+    public void updateTimestamp() {
+        this.updatedTimestamp = ZonedDateTime.now(clock);
+    }
+
+    public void markAsRemoved() {
+        this.removedTimestamp = ZonedDateTime.now(clock);
     }
 
     public String getId() {
@@ -131,23 +155,11 @@ public abstract class Device implements Runnable {
         return lastOffTimestamp;
     }
 
-    public ZonedDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public ZonedDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public ZonedDateTime getRemovedAt() {
-        return removedAt;
-    }
-
     public void turnOn() {
         if (!isOn) {
             isOn = true;
             lastOnTimestamp = Instant.now(clock);
-            updatedAt = ZonedDateTime.now(clock);
+            updateTimestamp(); // ✅ Mark as updated when turned ON
         }
     }
 
@@ -155,12 +167,8 @@ public abstract class Device implements Runnable {
         if (isOn) {
             isOn = false;
             lastOffTimestamp = Instant.now(clock);
-            updatedAt = ZonedDateTime.now(clock);
+            updateTimestamp(); // ✅ Mark as updated when turned OFF
         }
-    }
-
-    public void markAsRemoved() {
-        this.removedAt = ZonedDateTime.now(clock);
     }
 
     public void setOn(boolean on) {

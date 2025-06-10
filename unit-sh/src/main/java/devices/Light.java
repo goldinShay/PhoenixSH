@@ -64,8 +64,7 @@ public class Light extends Device {
     public List<String> getAvailableActions() {
         return List.of(
                 DeviceAction.ON.name().toLowerCase(),
-                DeviceAction.OFF.name().toLowerCase(),
-                DeviceAction.STATUS.name().toLowerCase()
+                DeviceAction.OFF.name().toLowerCase()
         );
     }
 

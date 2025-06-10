@@ -92,37 +92,40 @@ public class Menu {
                     System.out.print("Enter ID of the device to update: ");
                     String updateId = scanner.nextLine().trim();
 
-                    System.out.print("Enter new name: ");
+                    // ✅ Verify device exists in DeviceStorage
+                    Device device = DeviceStorage.getDevices().get(updateId);
+                    if (device == null) {
+                        System.out.println("❌ Device not found.");
+                        return;
+                    }
+
+                    // 👉 Ask for new details
+                    System.out.print("Enter new name (current: " + device.getName() + "): ");
                     String newName = scanner.nextLine().trim();
 
-                    System.out.print("Enter new brand: ");
+                    System.out.print("Enter new brand (current: " + device.getBrand() + "): ");
                     String newBrand = scanner.nextLine().trim();
 
-                    System.out.print("Enter new model: ");
+                    System.out.print("Enter new model (current: " + device.getModel() + "): ");
                     String newModel = scanner.nextLine().trim();
 
-                    List<Device> currentDevices = XlCreator.loadDevicesFromExcel(); // ✅ Correct list
+                    // 🔄 Apply updates
+                    device.setName(newName.isEmpty() ? device.getName() : newName);
+                    device.setBrand(newBrand.isEmpty() ? device.getBrand() : newBrand);
+                    device.setModel(newModel.isEmpty() ? device.getModel() : newModel);
 
-                    Optional<Device> optionalDevice = currentDevices.stream()
-                            .filter(d -> d.getId().equals(updateId))
-                            .findFirst();
+                    // 🌟 Update timestamp
+                    device.updateTimestamp();
 
-                    if (optionalDevice.isPresent()) {
-                        Device device = optionalDevice.get();
-                        device.setName(newName);
-                        device.setBrand(newBrand);
-                        device.setModel(newModel);
-
-                        boolean updated = XlCreator.updateDevice(device);
-                        if (updated) {
-                            System.out.println("✅ Device updated.");
-                        } else {
-                            System.out.println("❌ Failed to update device.");
-                        }
+                    // 💾 Persist changes to Excel
+                    boolean updated = XlCreator.updateDevice(device);
+                    if (updated) {
+                        System.out.println("✅ Device updated successfully!");
                     } else {
-                        System.out.println("❌ Device not found.");
+                        System.out.println("❌ Failed to update device.");
                     }
                 }
+
 
 
                 case "4" -> {
@@ -147,23 +150,30 @@ public class Menu {
     private static void addDeviceSubMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
         System.out.println("\n=== Add a Device ===");
 
-        DeviceType[] types = DeviceType.values();
-        for (int i = 0; i < types.length; i++) {
-            System.out.printf("%d - %s%n", i + 1, capitalize(types[i].toString()));
+        // ✅ Filter out GENERIC from the menu options
+        List<DeviceType> availableTypes = Arrays.stream(DeviceType.values())
+                .filter(type -> type != DeviceType.GENERIC)
+                .toList();
+
+        for (int i = 0; i < availableTypes.size(); i++) {
+            System.out.printf("%d - %s%n", i + 1, capitalize(availableTypes.get(i).toString()));
         }
 
-        System.out.print("Select a device type (or 0 to cancel): ");
+        // 🔙 Add the "Back" option
+        System.out.println("5 - Back (to Device menu)");
+
+        System.out.print("Select a device type (or 5 to cancel): ");
         String input = scanner.nextLine();
 
         try {
             int choice = Integer.parseInt(input);
-            if (choice == 0) return;
-            if (choice < 1 || choice > types.length) {
+            if (choice == 5) return;  // ✅ Handles Back option correctly
+            if (choice < 1 || choice > availableTypes.size()) {
                 System.out.println("❌ Invalid choice.");
                 return;
             }
 
-            DeviceType selectedType = types[choice - 1];
+            DeviceType selectedType = availableTypes.get(choice - 1); // ✅ Uses filtered list
 
             // 👉 Ask for device name
             System.out.print("Enter a name for the new " + capitalize(selectedType.toString()) + ": ");
@@ -178,10 +188,8 @@ public class Menu {
             }
 
             // ✅ Generate unique ID using DeviceIdManager
-            // ✅ Retrieve existing IDs before generating a new one
             Set<String> existingIds = new HashSet<>(DeviceStorage.getDevices().keySet());
             String id = XlCreator.getNextAvailableId(selectedType.toString().substring(0, 2), existingIds); // 🔥 Ensure unique ID generation
-
 
             // ⚙️ Instantiate the new device using the factory
             Map<String, Device> allDevicesMap = DeviceFactory.getDevices();
@@ -192,8 +200,6 @@ public class Menu {
                     clock,
                     allDevicesMap
             );
-
-
 
             // 💾 Add device to map and start its thread
             devices.put(id, newDevice);
@@ -212,6 +218,8 @@ public class Menu {
             System.out.println("❌ Failed to add device: " + e.getMessage());
         }
     }
+
+
 
 
 
