@@ -285,8 +285,58 @@ public class Menu {
     }
 
     private static void testDevice() {
-        System.out.println("🛠️ [Test Device] This is a placeholder for the device test feature.");
+        // 🔍 Filter out devices that are OFF
+        List<Device> offDevices = DeviceStorage.getDevices().values().stream()
+                .filter(device -> !device.isOn())
+                .toList();
+
+        if (offDevices.isEmpty()) {
+            System.out.println("📭 No devices available for testing. All are ON.");
+            return;
+        }
+
+        // 📋 List available devices for testing
+        System.out.println("\n=== Test Device ===");
+        System.out.printf("%-8s%-20s%-8s%n", "  ID", "NAME", "STATE");
+        System.out.println("--------------------------------");
+
+        offDevices.forEach(device -> System.out.printf(
+                "%-8s%-20s%-8s%n",
+                device.getId(),
+                device.getName(),
+                "Off"
+        ));
+
+        // 👉 Ask user to select a device by ID
+        System.out.print("Enter ID of the device to test (or 0 to cancel): ");
+        String testId = scanner.nextLine().trim();
+
+        if (testId.equals("0")) return;
+
+        // ✅ Find the selected device
+        Device deviceToTest = DeviceStorage.getDevices().get(testId);
+        if (deviceToTest == null || deviceToTest.isOn()) {
+            System.out.println("❌ Invalid choice or device is already ON.");
+            return;
+        }
+
+        // 🔄 Start test sequence
+        System.out.println("🧪 Testing device: " + deviceToTest.getName());
+
+        new Thread(() -> {
+            try {
+                deviceToTest.turnOn();
+                System.out.println("🟢 " + deviceToTest.getName() + " is ON for testing...");
+                Thread.sleep(10_000);
+                deviceToTest.turnOff();
+                System.out.println("🔴 " + deviceToTest.getName() + " has returned to OFF state.");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("⚠️ Test interrupted for " + deviceToTest.getName());
+            }
+        }).start();
     }
+
 
     private static void handleAddDevice(DeviceType selectedType, Map<String, Device> devices, List<Thread> deviceThreads) {
         // You can move or merge this logic from addDeviceInteractive if needed
