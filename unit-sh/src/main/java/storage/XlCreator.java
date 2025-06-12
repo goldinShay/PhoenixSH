@@ -16,7 +16,7 @@ public class XlCreator {
     private static final Path FILE_PATH = Paths.get("/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/shsXl.xlsx");
     private static final Clock clock = ClockUtil.getClock();
     private static final String DEVICES_SHEET = "Devices";
-    private static final String TASKS_SHEET = "ScheduledTasks";
+    private static final String TASKS_SHEET = "Scheduled Tasks";
 
     public static List<Device> loadDevicesFromExcel() {
         if (!ensureFileExists()) {

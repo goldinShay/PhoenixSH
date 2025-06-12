@@ -1,16 +1,19 @@
 package ui;
 
-import devices.*;
+import devices.Device;
+import devices.DeviceFactory;
+import devices.DeviceType;
+import scheduler.Scheduler;
 import storage.DeviceStorage;
+import storage.XlCreator;
 import utils.ClockUtil;
 import utils.NotificationService;
-import utils.DeviceIdManager;
-import storage.XlCreator;
-import java.util.Map;
-import java.util.List;
-import devices.Device;
 
 import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Menu {
@@ -19,8 +22,7 @@ public class Menu {
     private static final Clock clock = ClockUtil.getClock();
     private static final NotificationService notificationService = new NotificationService();
 
-    public static void show(Map<String, Device> devices, List<Thread> deviceThreads) {
-
+    public static void show(Map<String, Device> devices, List<Thread> deviceThreads, Scheduler scheduler) {
         while (true) {
             System.out.println("\n=== WELCOME TO PhoenixSH ===");
             System.out.println("1. Device Menu");
@@ -36,17 +38,62 @@ public class Menu {
                 case "1":
                     showDevicesMenu(devices, deviceThreads);
                     break;
-                case "4":
-                    testDevice();
+
+                case "3":
+                    showScheduleMenu(devices, scheduler); // ✅ Now correctly passing `scheduler`
                     break;
+
+                case "4":
+                    // 🔍 Identify testable OFF devices
+                    List<Device> offDevices = DeviceStorage.getDevices().values().stream()
+                            .filter(device -> !device.isOn())
+                            .toList();
+
+                    if (offDevices.isEmpty()) {
+                        System.out.println("📭 No devices available for testing. All are ON.");
+                        break;
+                    }
+
+                    // 📋 Show available devices BEFORE asking for an ID
+                    System.out.println("\n=== Testable Devices ===");
+                    System.out.printf("%-8s%-20s%-8s%n", "ID", "NAME", "STATE");
+                    System.out.println("--------------------------------");
+
+                    offDevices.forEach(device -> System.out.printf(
+                            "%-8s%-20s%-8s%n",
+                            device.getId(),
+                            device.getName(),
+                            device.getState()
+                    ));
+
+                    // 👉 Ask user for an ID
+                    System.out.print("Enter ID of the device to test (or 0 to cancel): ");
+                    String testId = scanner.nextLine().trim();
+
+                    if (testId.equals("0")) break; // 🚪 Exit if user cancels
+
+                    // ✅ Fetch the selected device
+                    Device selectedDevice = DeviceStorage.getDevices().get(testId);
+
+                    if (selectedDevice == null || selectedDevice.isOn()) {
+                        System.out.println("❌ Invalid choice or device is already ON.");
+                    } else {
+                        selectedDevice.testDevice();
+                    }
+                    break;
+
+
                 case "5":
                     System.out.println("👋 Exiting Smart Home System. Goodbye!");
                     return;
+
                 default:
                     System.out.println("❌ Invalid option. Please try again.");
             }
         }
     }
+
+
 
     public static void showDevicesMenu(Map<String, Device> devices, List<Thread> deviceThreads)
     {
@@ -64,25 +111,48 @@ public class Menu {
 
             switch (choice) {
                 case "1" -> {
+                    // 🔍 Check stored devices
                     System.out.println("🛠️ Debug - Devices in Storage: " + DeviceStorage.getDevices().size());
+                    System.out.println("Debug - Devices before listing: " + DeviceStorage.getDeviceList());
 
+                    // 🔎 Ensure state consistency before listing
+                    DeviceStorage.getDevices().values().forEach(device -> {
+                        System.out.println("🔎 Debug - Device State Check: " + device.getId() + " → " + device.getState());
+                        System.out.println("🧐 Direct Boolean State: " + device.isOn()); // 🛠️ Verifying `isOn` directly
+                    });
+
+                    // 🧐 Check if storage is empty before displaying
                     if (DeviceStorage.getDevices().isEmpty()) {
                         System.out.println("📭 No devices found.");
-                    } else {
-                        System.out.println("📋 Devices in System Memory:");
-                        System.out.printf("%-16s%-20s%-8s%-9s%n", "  TYPE", "NAME", "   ID", " STATE");
-                        System.out.println("-----------------------------------------------------");
+                        return;
+                    }
 
-                        DeviceStorage.getDevices().values().forEach(device -> System.out.printf(
+                    // 📋 Begin structured device listing
+                    System.out.println("📋 Devices in System Memory:");
+                    System.out.printf("%-16s%-20s%-8s%-9s%n", "  TYPE", "NAME", "   ID", " STATE");
+                    System.out.println("-----------------------------------------------------");
+
+                    // 🔎 Final debug before printing list
+                    System.out.println("🔎 Debug - Before printing: " + DeviceStorage.getDevices());
+
+                    // ✅ Display formatted device list with final state confirmation
+                    DeviceStorage.getDevices().values().forEach(device -> {
+                        System.out.println("🔎 Debug - Device Before Final Print: " + device);
+                        System.out.println("🛠️ Debug - isOn BEFORE PRINT: " + device.isOn()); // 🧐 More clarity
+                        System.out.printf(
                                 "%-2s%-16s%-20s%-8s%-8s%n",
                                 "- ",
                                 device.getType(),
                                 device.getName(),
                                 device.getId(),
                                 device.getState()
-                        ));
-                    }
+                        );
+                    });
                 }
+
+
+
+
 
 
 
@@ -223,7 +293,7 @@ public class Menu {
 
 
 
-    public static void showScheduleMenu(Map<String, Device> devices) {
+    public static void showScheduleMenu(Map<String, Device> devices, Scheduler scheduler) {
         boolean back = false;
 
         while (!back) {
@@ -235,13 +305,99 @@ public class Menu {
             String input = scanner.nextLine();
 
             switch (input) {
-                case "1" -> System.out.println("Soon");
-                case "2" -> System.out.println("Soon");
+                case "1" -> scheduler.printScheduledTasks(); // ✅ Now properly views tasks
+                case "2" -> scheduleNewTask(devices, scheduler); // ✅ Correct way to call instance method
                 case "3" -> back = true;
-                default -> System.out.println("Invalid option. Please choose 1-3.");
+                default -> System.out.println("❌ Invalid option. Please choose 1-3.");
             }
         }
     }
+    private static void scheduleNewTask(Map<String, Device> devices, Scheduler scheduler) {
+        if (devices.isEmpty()) {
+            System.out.println("📭 No available devices to schedule.");
+            return;
+        }
+
+        // 📋 List available devices
+        System.out.println("\n=== Schedule a Device ===");
+        System.out.printf("%-8s%-20s%-10s%n", "  ID", "NAME", "TYPE");
+        System.out.println("--------------------------------");
+
+        devices.values().forEach(device -> System.out.printf(
+                "%-8s%-20s%-10s%n",
+                device.getId(),
+                device.getName(),
+                device.getType()
+        ));
+
+        // 🔍 Ask for device ID
+        System.out.print("Enter ID of the device to schedule: ");
+        String deviceId = scanner.nextLine().trim();
+
+        Device selectedDevice = devices.get(deviceId);
+        if (selectedDevice == null) {
+            System.out.println("❌ Device not found.");
+            return;
+        }
+
+        // 🔄 Ask for action
+        System.out.print("Enter action to perform (e.g., 'on', 'off'): ");
+        String action = scanner.nextLine().trim();
+
+        // 🕒 Sub-menu for selecting scheduled time
+        LocalDateTime scheduledTime = getScheduledTime();
+
+        // 🔁 Ask for repeat frequency
+        System.out.println("\nSelect Repeat Frequency:");
+        System.out.println("1 - None");
+        System.out.println("2 - Daily");
+        System.out.println("3 - Monthly");
+        System.out.print("Choose an option: ");
+        String repeatChoice = scanner.nextLine().trim();
+        String repeat = switch (repeatChoice) {
+            case "2" -> "daily";
+            case "3" -> "monthly";
+            default -> "none";
+        };
+
+        // ✅ Schedule the task
+        scheduler.scheduleTask(selectedDevice, action, scheduledTime, repeat);
+        System.out.println("✅ Task scheduled successfully for " + selectedDevice.getName() + " at " + scheduledTime);
+    }
+
+    private static LocalDateTime getScheduledTime() {
+        System.out.println("\nSelect Task Date:");
+        System.out.println("1 - Set Task for Today");
+        System.out.println("2 - Other Date");
+        System.out.print("Choose an option: ");
+        String dateChoice = scanner.nextLine().trim();
+
+        LocalDate taskDate;
+        if (dateChoice.equals("1")) {
+            taskDate = LocalDate.now();
+        } else {
+            System.out.print("Enter Year: ");
+            int year = Integer.parseInt(scanner.nextLine().trim());
+
+            System.out.print("Enter Month (1-12): ");
+            int month = Integer.parseInt(scanner.nextLine().trim());
+
+            System.out.print("Enter Day: ");
+            int day = Integer.parseInt(scanner.nextLine().trim());
+
+            taskDate = LocalDate.of(year, month, day);
+        }
+
+        System.out.print("Enter Time (HH:mm): ");
+        String timeInput = scanner.nextLine().trim();
+        LocalTime taskTime = LocalTime.parse(timeInput, DateTimeFormatter.ofPattern("HH:mm"));
+
+        return taskDate.atTime(taskTime);
+    }
+
+
+
+
 
     private static void listDevices(Map<String, Device> devices) {
         if (devices.isEmpty()) {
@@ -262,81 +418,7 @@ public class Menu {
     }
 
     private static void removeDeviceInteractive(Map<String, Device> devices) {
-        listDevices(devices);
-        if (devices.isEmpty()) return;
-
-        System.out.print("Enter device ID to remove: ");
-        String input = scanner.nextLine().trim();
-
-        Optional<Device> toRemove = devices.values().stream()
-                .filter(d -> d.getId().equalsIgnoreCase(input))
-                .findFirst();
-
-        if (toRemove.isPresent()) {
-            Device removed = toRemove.get();
-            removed.markAsRemoved();
-            devices.remove(removed);
-            System.out.println("🗑️ Removed device: " + removed.getName() + " [" + removed.getId() + "]");
-            DeviceStorage.removeDevice(removed.getId());  // ✅ Uses built-in removal method
-
-        } else {
-            System.out.println("❌ No device found with that ID.");
-        }
     }
-
-    private static void testDevice() {
-        // 🔍 Filter out devices that are OFF
-        List<Device> offDevices = DeviceStorage.getDevices().values().stream()
-                .filter(device -> !device.isOn())
-                .toList();
-
-        if (offDevices.isEmpty()) {
-            System.out.println("📭 No devices available for testing. All are ON.");
-            return;
-        }
-
-        // 📋 List available devices for testing
-        System.out.println("\n=== Test Device ===");
-        System.out.printf("%-8s%-20s%-8s%n", "  ID", "NAME", "STATE");
-        System.out.println("--------------------------------");
-
-        offDevices.forEach(device -> System.out.printf(
-                "%-8s%-20s%-8s%n",
-                device.getId(),
-                device.getName(),
-                "Off"
-        ));
-
-        // 👉 Ask user to select a device by ID
-        System.out.print("Enter ID of the device to test (or 0 to cancel): ");
-        String testId = scanner.nextLine().trim();
-
-        if (testId.equals("0")) return;
-
-        // ✅ Find the selected device
-        Device deviceToTest = DeviceStorage.getDevices().get(testId);
-        if (deviceToTest == null || deviceToTest.isOn()) {
-            System.out.println("❌ Invalid choice or device is already ON.");
-            return;
-        }
-
-        // 🔄 Start test sequence
-        System.out.println("🧪 Testing device: " + deviceToTest.getName());
-
-        new Thread(() -> {
-            try {
-                deviceToTest.turnOn();
-                System.out.println("🟢 " + deviceToTest.getName() + " is ON for testing...");
-                Thread.sleep(10_000);
-                deviceToTest.turnOff();
-                System.out.println("🔴 " + deviceToTest.getName() + " has returned to OFF state.");
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("⚠️ Test interrupted for " + deviceToTest.getName());
-            }
-        }).start();
-    }
-
 
     private static void handleAddDevice(DeviceType selectedType, Map<String, Device> devices, List<Thread> deviceThreads) {
         // You can move or merge this logic from addDeviceInteractive if needed

@@ -1,5 +1,7 @@
 package devices;
 
+import storage.DeviceStorage;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -97,6 +99,21 @@ public abstract class Device implements Runnable {
             updateTimestamp();  // ✅ Timestamp update for action change
         }
     }
+    public void setState(String newState) {
+        if (newState.equalsIgnoreCase(DeviceAction.ON.name())) {
+            this.isOn = true;
+            lastOnTimestamp = Instant.now(clock);
+        } else if (newState.equalsIgnoreCase(DeviceAction.OFF.name())) {
+            this.isOn = false;
+            lastOffTimestamp = Instant.now(clock);
+        } else {
+            throw new IllegalArgumentException("❌ Invalid state: " + newState);
+        }
+
+        updateTimestamp(); // ✅ Ensure the last modified time reflects state changes
+        System.out.println("🔄 Debug - setState() executed: " + deviceId + " → " + getState());
+    }
+
 
     // 🌟 New Methods for Timestamp Tracking
     public String getAddedTimestamp() {
@@ -140,11 +157,8 @@ public abstract class Device implements Runnable {
     }
 
     public String getState() {
-        return isOn ? "On" : "Off";
-    }
-
-    public boolean isOn() {
-        return isOn;
+        System.out.println("🔎 Debug - Inside getState() for " + deviceId + ": isOn=" + isOn);
+        return isOn ? DeviceAction.ON.name() : DeviceAction.OFF.name();
     }
 
     public Instant getLastOnTimestamp() {
@@ -154,54 +168,87 @@ public abstract class Device implements Runnable {
     public Instant getLastOffTimestamp() {
         return lastOffTimestamp;
     }
+    public boolean isOn() {
+        return isOn;
+    }
 
     public void turnOn() {
         if (!isOn) {
             isOn = true;
             lastOnTimestamp = Instant.now(clock);
-            updateTimestamp(); // ✅ Mark as updated when turned ON
+            updateTimestamp();
+
+            System.out.println("🔎 Debug - turnOn() executed. LI001 state now: " + isOn); // ✅ Verify here
+
+            // 🔄 Force DeviceStorage update AFTER instance state change
+            DeviceStorage.getDevices().put(deviceId, this);
+            DeviceStorage.updateDeviceState(deviceId, "On");
+
+            System.out.println("🔎 Debug - Storage update called. LI001 state now: " + DeviceStorage.getDevices().get(deviceId).getState());
         }
     }
+
 
     public void turnOff() {
         if (isOn) {
             isOn = false;
             lastOffTimestamp = Instant.now(clock);
-            updateTimestamp(); // ✅ Mark as updated when turned OFF
-        }
-    }
+            updateTimestamp();
 
-    public void setOn(boolean on) {
-        if (this.isOn != on) {
-            if (on) turnOn();
-            else turnOff();
+            DeviceStorage.updateDeviceState(deviceId, "oFf"); // ✅ Persist OFF state in storage
+            System.out.println("🔎 Debug - turnOff() executed. LI001 state now: " + isOn);
         }
     }
 
     public void testDevice() {
         System.out.println("🔧 Starting test for device: " + getName());
 
-        Thread testThread = new Thread(() -> {
+        new Thread(() -> {
             try {
-                turnOn();
-                System.out.println("🟢 " + getName() + " is ON");
+                // 🔄 Ensure DeviceStorage is updated BEFORE calling turnOn()
+                DeviceStorage.getDevices().put(deviceId, this);
+                DeviceStorage.updateDeviceState(deviceId, "On");
+
+                turnOn();  // ✅ Now storage already expects "ON"
+
+                Thread.sleep(500); // Allow storage sync
+
+                // 🔄 Force a full refresh before retrieving instance
+                Device freshInstance = DeviceStorage.getDevices().get(deviceId);
+
+                if (freshInstance == null) {
+                    System.out.println("❌ Error: Device reference lost in storage!");
+                    return;
+                }
+
+                String currentState = freshInstance.getState();
+                System.out.println("🟢 " + getName() + " is " + currentState);
+
                 Thread.sleep(TEST_DURATION_MS);
-                turnOff();
+
+                // 🔄 Turning OFF with proper state persistence
+                freshInstance.turnOff();
+                DeviceStorage.getDevices().put(deviceId, freshInstance);
+                DeviceStorage.updateDeviceState(deviceId, "Off");
+
                 System.out.println("🔴 " + getName() + " is OFF");
                 System.out.println("✅ Test complete for: " + getName());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 System.out.println("⚠️ Test interrupted for " + getName());
             }
-        }, getName() + "-TestThread");
-
-        testThread.start();
+        }, getName() + "-TestThread").start();
     }
+
+
+
 
     public void performAction(String action) {
         System.out.println("🎯 Performing action: " + action + " on " + getName());
         simulate(action);
+        DeviceStorage.updateDeviceState(getId(), action); // ✅ Ensure state updates after action
     }
+
 
     public abstract List<String> getAvailableActions();
     public abstract void simulate(String action);

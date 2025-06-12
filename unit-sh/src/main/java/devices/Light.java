@@ -22,6 +22,11 @@ public class Light extends Device {
         super(generateNewId(), name, DeviceType.LIGHT, clock);  // ✅ Call to `super()` comes first
         this.isOn = false;
     }
+    public Light(String deviceId, String name, Clock clock, boolean isOn) {
+        super(deviceId, name, DeviceType.LIGHT, clock);
+        this.isOn = false; // ✅ Default to OFF
+    }
+
 
     // 🌟 Static method to properly generate a unique ID
     private static String generateNewId() {

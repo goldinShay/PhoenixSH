@@ -24,7 +24,9 @@ public class DeviceFactory {
             case LIGHT -> {
                 Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet());  // ✅ Retrieve existing IDs
                 String newId = XlCreator.getNextAvailableId("LI", allIds);  // ✅ Generate unique ID
-                return new Light(newId, name, clock);  // ✅ Matches constructor correctly
+                boolean savedState = getSavedState(newId); // ✅ Retrieve last known state
+                return new Light(newId, name, clock, savedState); // ✅ Pass state into constructor
+
             }
             case DRYER -> throw new UnsupportedOperationException("Dryer support coming soon!"); // ✅ Properly disables Dryer
             case WASHING_MACHINE -> throw new UnsupportedOperationException("Washing Machine support coming soon!");
@@ -33,6 +35,16 @@ public class DeviceFactory {
         }
 
     }
+
+    public static boolean getSavedState(String deviceId) {
+        Device device = devices.get(deviceId);
+        if (device != null) {
+            System.out.println("🔍 Debug - Retrieving saved state: " + deviceId + " → " + device.isOn());
+            return device.isOn(); // ✅ Pulls last known state
+        }
+        return false; // ✅ Defaults to OFF if no prior state exists
+    }
+
 
 
     // 🧭 Optional fallback for Excel loader etc.
