@@ -187,4 +187,20 @@ public class Scheduler {
             System.err.println("❌ Failed to load scheduled tasks: " + e.getMessage());
         }
     }
+    // 🔹 Updates an existing scheduled task
+    public void updateTask(int index, LocalDateTime newTime, String newRepeat) {
+        if (index < 0 || index >= scheduledTasks.size()) {
+            System.out.println("❌ Invalid task index.");
+            return;
+        }
+
+        ScheduledTask task = scheduledTasks.get(index);
+        task.setTime(newTime);
+        task.setRepeat(newRepeat);
+
+        saveTasksToExcel();  // ✅ Persist changes
+        System.out.println("✅ Task updated successfully: " + task);
+    }
+
+
 }

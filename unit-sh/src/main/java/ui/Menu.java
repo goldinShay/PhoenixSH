@@ -298,20 +298,49 @@ public class Menu {
 
         while (!back) {
             System.out.println("\n=== Scheduler Menu ===");
-            System.out.println("1 - View Scheduled Tasks");
-            System.out.println("2 - Schedule a Device");
-            System.out.println("3 - Back");
+            System.out.println("1 - View    Tasks");
+            System.out.println("2 - Set    a Task");
+            System.out.println("3 - Update a Task");
+            System.out.println("4 - Delete a Task");
+            System.out.println("5 - Back");
             System.out.print("Choose an option: ");
             String input = scanner.nextLine();
 
             switch (input) {
-                case "1" -> scheduler.printScheduledTasks(); // ✅ Now properly views tasks
-                case "2" -> scheduleNewTask(devices, scheduler); // ✅ Correct way to call instance method
-                case "3" -> back = true;
-                default -> System.out.println("❌ Invalid option. Please choose 1-3.");
+                case "1" -> scheduler.printScheduledTasks();
+                case "2" -> {
+                    scheduleNewTask(devices, scheduler);
+                    back = true;  // ✅ Return to main menu after scheduling
+                }
+                case "3" -> {
+                    scheduler.printScheduledTasks();  // ✅ Now displays tasks before selecting
+                    scheduler.updateTask(getTaskIndex(), getNewTaskTime(), getNewRepeat());
+                }
+                case "4" -> scheduler.removeTask(getTaskIndex());  // ✅ Calls method inside `Scheduler`
+                case "5" -> back = true;
+                default -> System.out.println("❌ Invalid option. Please choose 1-5.");
             }
         }
     }
+
+    private static int getTaskIndex() {
+        System.out.print("📌 Enter task number (or 0 to cancel): ");
+        int taskIndex = Integer.parseInt(scanner.nextLine()) - 1;
+        return (taskIndex < 0) ? -1 : taskIndex;
+    }
+
+    private static LocalDateTime getNewTaskTime() {
+        System.out.print("🕒 Enter new scheduled time (yyyy-MM-dd HH:mm): ");
+        return LocalDateTime.parse(scanner.nextLine(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+    }
+
+    private static String getNewRepeat() {
+        System.out.print("🔁 Enter new repeat frequency (none, daily, weekly, monthly): ");
+        return scanner.nextLine().trim().toLowerCase();
+    }
+
+
+
     private static void scheduleNewTask(Map<String, Device> devices, Scheduler scheduler) {
         if (devices.isEmpty()) {
             System.out.println("📭 No available devices to schedule.");
