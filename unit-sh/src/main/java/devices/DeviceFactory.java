@@ -30,7 +30,15 @@ public class DeviceFactory {
             }
             case DRYER -> throw new UnsupportedOperationException("Dryer support coming soon!"); // ✅ Properly disables Dryer
             case WASHING_MACHINE -> throw new UnsupportedOperationException("Washing Machine support coming soon!");
-            case THERMOSTAT -> throw new UnsupportedOperationException("Thermostat support coming soon!");
+            case THERMOSTAT -> {
+                Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet()); // ✅ Retrieve existing IDs
+                String newId = XlCreator.getNextAvailableId("TH", allIds); // ✅ Generate unique ID
+                boolean savedState = getSavedState(newId); // ✅ Retrieve last known state
+
+                NotificationService ns = new NotificationService(); // ✅ Ensure notifications work
+                return new Thermostat(newId, name, 25.0, ns, clock); // ✅ Pass required parameters
+            }
+
             default -> throw new IllegalArgumentException("Unsupported device type: " + type);
         }
 
@@ -39,7 +47,6 @@ public class DeviceFactory {
     public static boolean getSavedState(String deviceId) {
         Device device = devices.get(deviceId);
         if (device != null) {
-            System.out.println("🔍 Debug - Retrieving saved state: " + deviceId + " → " + device.isOn());
             return device.isOn(); // ✅ Pulls last known state
         }
         return false; // ✅ Defaults to OFF if no prior state exists

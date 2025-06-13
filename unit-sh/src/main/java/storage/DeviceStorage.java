@@ -14,23 +14,16 @@ public class DeviceStorage {
     private static final Map<String, Device> devices = new HashMap<>();
     private static final List<Thread> deviceThreads = new ArrayList<>();
 
-    // 🌟 Initialize storage by loading devices from Excel
+    // Initialize storage by loading devices from Excel
     public static void initialize() {
-        System.out.println("🛠️ Debug - Initializing DeviceStorage...");
         devices.clear();
-
         List<Device> loadedDevices = XlCreator.loadDevicesFromExcel();
-        for (Device device : loadedDevices) {
-            devices.put(device.getId(), device);
-        }
-
-        System.out.println("Debug - Devices in DeviceStorage after Excel load: " + devices.keySet());
+        loadedDevices.forEach(device -> devices.put(device.getId(), device));
     }
 
-    // 🌟 Get all stored devices with real-time synchronization
+    // Get all stored devices with real-time synchronization
     public static Map<String, Device> getDevices() {
-        refreshDevices();  // ✅ Ensures up-to-date data before fetching
-        System.out.println("🔎 Debug - Inside getDevices(): " + devices);
+        refreshDevices();
         return devices;
     }
 
@@ -38,26 +31,23 @@ public class DeviceStorage {
         return new ArrayList<>(getDevices().values());
     }
 
-    // 🌟 Add a new device to memory & persist in Excel
+    // Add a new device to memory & persist in Excel
     public static void addDevice(Device device) {
         devices.put(device.getId(), device);
         saveDevices();
     }
 
-    // 🌟 Remove a device from memory & Excel
+    // Remove a device from memory & Excel
     public static boolean removeDevice(String deviceId) {
-        if (devices.containsKey(deviceId)) {
-            devices.remove(deviceId);
+        if (devices.remove(deviceId) != null) {
             saveDevices();
             return true;
         }
         return false;
     }
 
-    // 🌟 Ensure the latest device synchronization before saving to Excel
+    // Ensure the latest device synchronization before saving to Excel
     public static void saveDevices() {
-        System.out.println("🛠️ Saving devices to Excel...");
-
         try (FileOutputStream fos = new FileOutputStream(EXCEL_FILE_NAME);
              Workbook workbook = new XSSFWorkbook()) {
 
@@ -70,76 +60,45 @@ public class DeviceStorage {
             }
 
             int rowIndex = 1;
-            for (String deviceId : devices.keySet()) {
-                Device latestInstance = devices.get(deviceId);  // ✅ Ensure the absolute latest reference
-
-                if (latestInstance == null) {
-                    System.out.println("❌ Warning: Device ID " + deviceId + " not found in memory!");
-                    continue;
-                }
-
+            for (Device device : devices.values()) {
                 Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(latestInstance.getType().name());
-                row.createCell(1).setCellValue(latestInstance.getId());
-                row.createCell(2).setCellValue(latestInstance.getName());
-                row.createCell(3).setCellValue(latestInstance.getState());  // ✅ Prevents outdated state from Excel
-                row.createCell(4).setCellValue(Optional.ofNullable(latestInstance.getBrand()).orElse("N/A"));
-                row.createCell(5).setCellValue(Optional.ofNullable(latestInstance.getModel()).orElse("N/A"));
-                row.createCell(6).setCellValue(String.join(", ", latestInstance.getAvailableActions()));
-                row.createCell(7).setCellValue(latestInstance.getAddedTimestamp());
-                row.createCell(8).setCellValue(latestInstance.getUpdatedTimestamp());
+                row.createCell(0).setCellValue(device.getType().name());
+                row.createCell(1).setCellValue(device.getId());
+                row.createCell(2).setCellValue(device.getName());
+                row.createCell(3).setCellValue(device.getState());
+                row.createCell(4).setCellValue(Optional.ofNullable(device.getBrand()).orElse("N/A"));
+                row.createCell(5).setCellValue(Optional.ofNullable(device.getModel()).orElse("N/A"));
+                row.createCell(6).setCellValue(String.join(", ", device.getAvailableActions()));
+                row.createCell(7).setCellValue(device.getAddedTimestamp());
+                row.createCell(8).setCellValue(device.getUpdatedTimestamp());
             }
 
             workbook.write(fos);
-            System.out.println("✅ Devices saved to Excel with correct live states.");
         } catch (IOException e) {
             System.err.println("❌ Failed to save devices: " + e.getMessage());
         }
     }
 
-
-    // 🌟 Ensure device state updates correctly across memory & persistence
+    // Ensure device state updates correctly across memory & persistence
     public static void updateDeviceState(String deviceId, String action) {
         Device device = devices.get(deviceId);
-
         if (device != null) {
-            System.out.println("🔎 Debug - Entering updateDeviceState() for " + deviceId);
-            System.out.println("🔍 Debug - Before update: " + device.getId() + " → " + device.getState() + " | Action: " + action);
-
             boolean shouldTurnOn = action.equalsIgnoreCase(DeviceAction.ON.name());
-            System.out.println("🔎 Debug - Should Turn On? " + shouldTurnOn);
-
             if (shouldTurnOn) {
                 device.turnOn();
             } else {
                 device.turnOff();
             }
 
-            // 🔄 Explicitly set the state before saving
             device.setState(shouldTurnOn ? DeviceAction.ON.name() : DeviceAction.OFF.name());
-            // 🔄 Ensure the latest instance gets stored
             devices.put(deviceId, device);
-
             saveDevices();
-
-            System.out.println("🔎 Debug - Final verification after setting state: " + device.getId() + " → " + device.getState());
-        } else {
-            System.out.println("❌ Debug - Device " + deviceId + " not found in storage.");
         }
     }
 
-
-
-    // 🌟 Ensures memory and persistence align correctly
+    // Ensures memory and persistence align correctly
     public static void refreshDevices() {
-        System.out.println("🔄 Refreshing DeviceStorage...");
-        for (String id : devices.keySet()) {
-            Device latestInstance = devices.get(id);
-            if (latestInstance != null) {
-                devices.put(id, latestInstance);
-            }
-        }
-        System.out.println("✅ DeviceStorage refresh completed.");
+        devices.replaceAll((id, latestInstance) -> latestInstance);
     }
 
     public static List<Thread> getDeviceThreads() {

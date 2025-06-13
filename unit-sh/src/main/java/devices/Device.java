@@ -28,6 +28,8 @@ public abstract class Device implements Runnable {
     private boolean isOn;
     private Instant lastOnTimestamp;
     private Instant lastOffTimestamp;
+    private boolean autoEnabled = false;  // Default OFF
+
 
     // 🕒 Timestamps
     private final Clock clock;
@@ -51,7 +53,6 @@ public abstract class Device implements Runnable {
         this.updatedTimestamp = addedTimestamp; // ✅ First update matches creation time
 
         REGISTERED_IDS.add(deviceId);
-        System.out.println("🛠️ Debug - Device Created: " + this.name + " at " + this.addedTimestamp); // 🔥 Debugging print
     }
 
 
@@ -109,9 +110,7 @@ public abstract class Device implements Runnable {
         } else {
             throw new IllegalArgumentException("❌ Invalid state: " + newState);
         }
-
         updateTimestamp(); // ✅ Ensure the last modified time reflects state changes
-        System.out.println("🔄 Debug - setState() executed: " + deviceId + " → " + getState());
     }
 
 
@@ -157,7 +156,6 @@ public abstract class Device implements Runnable {
     }
 
     public String getState() {
-        System.out.println("🔎 Debug - Inside getState() for " + deviceId + ": isOn=" + isOn);
         return isOn ? DeviceAction.ON.name() : DeviceAction.OFF.name();
     }
 
@@ -178,13 +176,9 @@ public abstract class Device implements Runnable {
             lastOnTimestamp = Instant.now(clock);
             updateTimestamp();
 
-            System.out.println("🔎 Debug - turnOn() executed. LI001 state now: " + isOn); // ✅ Verify here
-
             // 🔄 Force DeviceStorage update AFTER instance state change
             DeviceStorage.getDevices().put(deviceId, this);
             DeviceStorage.updateDeviceState(deviceId, "On");
-
-            System.out.println("🔎 Debug - Storage update called. LI001 state now: " + DeviceStorage.getDevices().get(deviceId).getState());
         }
     }
 
@@ -196,9 +190,20 @@ public abstract class Device implements Runnable {
             updateTimestamp();
 
             DeviceStorage.updateDeviceState(deviceId, "oFf"); // ✅ Persist OFF state in storage
-            System.out.println("🔎 Debug - turnOff() executed. LI001 state now: " + isOn);
         }
     }
+    public void setOn(boolean isOn) {
+        if (this.isOn != isOn) {
+            this.isOn = isOn;
+            lastOnTimestamp = isOn ? Instant.now(clock) : null;
+            updateTimestamp();
+
+            // 🔄 Force DeviceStorage update AFTER instance state change
+            DeviceStorage.getDevices().put(deviceId, this);
+            DeviceStorage.updateDeviceState(deviceId, isOn ? "On" : "Off");
+        }
+    }
+
 
     public void testDevice() {
         System.out.println("🔧 Starting test for device: " + getName());
@@ -252,7 +257,10 @@ public abstract class Device implements Runnable {
 
     public abstract List<String> getAvailableActions();
     public abstract void simulate(String action);
-    public abstract void simulate();
+    public void simulate() {
+        System.out.println("💡 Simulating Light behavior... Current state: " + (isOn() ? "ON" : "OFF"));
+    }
+
     public abstract String toDataString();
 
     @Override

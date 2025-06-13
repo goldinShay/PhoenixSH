@@ -38,6 +38,9 @@ public class Menu {
                 case "1":
                     showDevicesMenu(devices, deviceThreads);
                     break;
+                case "2":
+                    DeviceMonitor.showMonitorDeviceMenu(devices, scheduler);
+                    break;
 
                 case "3":
                     showScheduleMenu(devices, scheduler); // ✅ Now correctly passing `scheduler`
@@ -111,13 +114,8 @@ public class Menu {
 
             switch (choice) {
                 case "1" -> {
-                    // 🔍 Check stored devices
-                    System.out.println("🛠️ Debug - Devices in Storage: " + DeviceStorage.getDevices().size());
-                    System.out.println("Debug - Devices before listing: " + DeviceStorage.getDeviceList());
-
                     // 🔎 Ensure state consistency before listing
                     DeviceStorage.getDevices().values().forEach(device -> {
-                        System.out.println("🔎 Debug - Device State Check: " + device.getId() + " → " + device.getState());
                         System.out.println("🧐 Direct Boolean State: " + device.isOn()); // 🛠️ Verifying `isOn` directly
                     });
 
@@ -133,21 +131,19 @@ public class Menu {
                     System.out.println("-----------------------------------------------------");
 
                     // 🔎 Final debug before printing list
-                    System.out.println("🔎 Debug - Before printing: " + DeviceStorage.getDevices());
 
                     // ✅ Display formatted device list with final state confirmation
                     DeviceStorage.getDevices().values().forEach(device -> {
-                        System.out.println("🔎 Debug - Device Before Final Print: " + device);
-                        System.out.println("🛠️ Debug - isOn BEFORE PRINT: " + device.isOn()); // 🧐 More clarity
                         System.out.printf(
                                 "%-2s%-16s%-20s%-8s%-8s%n",
                                 "- ",
-                                device.getType(),
+                                device.getType().name(),  // ✅ Explicitly use .name() to guarantee the correct DeviceType
                                 device.getName(),
                                 device.getId(),
                                 device.getState()
                         );
                     });
+
                 }
 
 
@@ -316,7 +312,10 @@ public class Menu {
                     scheduler.printScheduledTasks();  // ✅ Now displays tasks before selecting
                     scheduler.updateTask(getTaskIndex(), getNewTaskTime(), getNewRepeat());
                 }
-                case "4" -> scheduler.removeTask(getTaskIndex());  // ✅ Calls method inside `Scheduler`
+                case "4" -> {
+                    scheduler.removeTask(getTaskIndex());  // ✅ Calls method inside `Scheduler`
+                    back = true;  // ✅ Return to main menu
+                }
                 case "5" -> back = true;
                 default -> System.out.println("❌ Invalid option. Please choose 1-5.");
             }
@@ -447,11 +446,6 @@ public class Menu {
     }
 
     private static void removeDeviceInteractive(Map<String, Device> devices) {
-    }
-
-    private static void handleAddDevice(DeviceType selectedType, Map<String, Device> devices, List<Thread> deviceThreads) {
-        // You can move or merge this logic from addDeviceInteractive if needed
-        // Currently not used in the original paste, but declared
     }
 
     private static String capitalize(String str) {

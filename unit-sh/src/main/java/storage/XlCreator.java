@@ -10,6 +10,7 @@ import java.time.Clock;
 import java.util.*;
 import java.util.stream.Collectors;
 import utils.ClockUtil;
+import utils.NotificationService;
 
 public class XlCreator {
 
@@ -32,27 +33,35 @@ public class XlCreator {
             }
 
             List<Device> devices = new ArrayList<>();
-            System.out.println("📂 Debug - Starting device loading from Excel...");
 
             for (Row row : sheet) {
                 if (row.getRowNum() == 0) continue; // Skip header row
 
                 try {
-                    System.out.println("🔎 Reading row " + row.getRowNum() + "...");
-
                     String type = row.getCell(0).getStringCellValue().trim().toUpperCase();
                     String id = row.getCell(1).getStringCellValue().trim();
                     String name = row.getCell(2).getStringCellValue().trim();
 
-                    System.out.println("🛠️ Debug - Attempting to parse: " + type + " | " + id + " | " + name);
-
-                    if (!DeviceType.isValidType(type)) {  // ✅ Ensure valid device type
+                    if (!DeviceType.isValidType(type)) {
                         System.err.println("⚠️ Skipping row " + row.getRowNum() + ": Invalid device type '" + type + "'");
                         continue;
                     }
 
                     DeviceType deviceType = DeviceType.valueOf(type);
-                    Device device = new Light(id, name, Clock.systemDefaultZone());  // ✅ Ensure correct constructor
+                    Device device;
+
+                    Clock clock = Clock.systemDefaultZone();
+                    NotificationService ns = new NotificationService();
+
+                    // ✅ Dynamically create the correct device type
+                    switch (deviceType) {
+                        case LIGHT -> device = new Light(id, name, clock, false);
+                        case THERMOSTAT -> device = new Thermostat(id, name, 25.0, ns, clock);
+                        default -> {
+                            System.err.println("⚠️ Unsupported device type: " + type);
+                            continue;
+                        }
+                    }
 
                     devices.add(device);
                     System.out.println("✅ Successfully Loaded: " + id + " (" + type + ")");
@@ -60,15 +69,13 @@ public class XlCreator {
                     System.err.println("⚠️ Skipping row " + row.getRowNum() + ": " + e.getMessage());
                 }
             }
-
-            System.out.println("🛠️ Debug - Total Devices Loaded from Excel: " + devices.size());
-            System.out.println("📂 Debug - Final Loaded IDs: " + devices.stream().map(Device::getId).toList());  // 🔥 Ensure IDs are correctly listed
             return devices;
         } catch (IOException e) {
             System.err.println("❌ Failed to read devices: " + e.getMessage());
             return Collections.emptyList();
         }
     }
+
 
 
 
@@ -81,13 +88,14 @@ public class XlCreator {
 
             // ✅ Create DEVICES sheet with new format
             createSheetWithHeaders(workbook, DEVICES_SHEET,
-                    "TYPE", "ID", "NAME", "BRAND", "MODEL", "ACTIONS",
-                    "ADDED_TS", "UPDATED_TS", "REMOVED_TS"); // 🔥 New timestamp columns added
+                    "TYPE", "ID", "NAME", "BRAND", "MODEL", "ACTIONS", "AUTO-ON", "AUTO-OFF",  // 🔥 Added Auto-Enabler Columns!
+                    "ADDED_TS", "UPDATED_TS", "REMOVED_TS");
 
             saveWorkbook(workbook);
-            System.out.println("✅ Excel file created with updated format at: " + FILE_PATH);
+            System.out.println("✅ Excel file created with Auto-Enabler support at: " + FILE_PATH);
         }
     }
+
 
 
     public static void writeDeviceToExcel(Device device) {
@@ -132,7 +140,6 @@ public class XlCreator {
     }
 
     public static String getNextAvailableId(String typePrefix, Set<String> existingIds) {
-        System.out.println("🛠️ Debug - Generating ID for prefix: " + typePrefix + " with existing IDs: " + existingIds);
 
         int maxId = existingIds.stream()
                 .filter(id -> id.startsWith(typePrefix))
@@ -158,7 +165,6 @@ public class XlCreator {
 
         // 🌟 Ensure actions are stored correctly
         List<String> actions = device.getAvailableActions();
-        System.out.println("🛠️ Debug - Writing Actions for " + device.getName() + ": " + actions);
 
         row.createCell(5).setCellValue(String.join(", ", actions));
 
@@ -182,7 +188,6 @@ public class XlCreator {
 
         // 🔍 Debugging Type Extraction
         System.out.println("👉 Type from Excel = '" + type + "' (length: " + type.length() + ")");
-        System.out.println("🛠️ Debug - Sending Type to Factory: '" + type + "', ID: '" + id + "', Name: '" + name + "'");
 
         if (type.isBlank() || id.isBlank() || name.isBlank()) {
             System.err.println("⚠️ Skipping row " + row.getRowNum() + ": Missing essential data (Type: " + type + ", ID: " + id + ", Name: " + name + ")");

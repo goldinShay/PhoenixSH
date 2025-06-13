@@ -3,125 +3,135 @@ package devices;
 import utils.NotificationService;
 
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 
 public class Thermostat extends Device {
-    private double temperature;
-    private double threshold;
-    private final NotificationService notificationService;
+
+    private static final double DEFAULT_USER_TEMP = 25.0;
     private static int counter = 1;
 
+    private double userTemp;
+    private final NotificationService notificationService;
+    private double crntDevTmp = 20.20; // ✅ Device's actual temperature
+
+
     private static String generateId() {
-        return "T" + String.format("%03d", counter++);
+        return "TM" + String.format("%03d", counter++);
     }
 
-    // ✅ Used by the menu (auto-generates ID)
-    public Thermostat(String name, double temperature, double threshold,
-                      NotificationService notificationService, Clock clock) {
-        super(generateId(), name, DeviceType.THERMOSTAT, clock);
-        this.temperature = temperature;
-        this.threshold = threshold;
+    public Thermostat(NotificationService notificationService, Clock clock) {
+        super(generateId(), "Thermostat-" + counter, DeviceType.THERMOSTAT, clock);
+        this.userTemp = DEFAULT_USER_TEMP;
         this.notificationService = notificationService;
     }
 
-    // ✅ Used by deserialization (from file or saved data)
-    public Thermostat(double temperature, double threshold, String id,
+    public Thermostat(String id, String name, double userTemp,
                       NotificationService notificationService, Clock clock) {
-        super(id, "Thermostat-" + id, DeviceType.THERMOSTAT, clock);
-        this.temperature = temperature;
-        this.threshold = threshold;
-        this.notificationService = notificationService;
-    }
-
-    // ✅ Used internally (fallback constructor with default values)
-    public Thermostat(String id, String name, Clock clock) {
         super(id, name, DeviceType.THERMOSTAT, clock);
-        this.temperature = 20.0;
-        this.threshold = 22.0;
-        this.notificationService = null;
+        this.userTemp = userTemp;
+        this.notificationService = notificationService;
+    }
+    public void setUserTemp(double temp) {
+        this.userTemp = temp;
+        System.out.println("🌡️ User Temp set to " + temp + "°C.");
+        checkThreshold(); // ✅ Ensure threshold checks happen after updates
     }
 
-    public void setTemperature(double temperature) {
-        this.temperature = temperature;
+
+    public double getUserTemp() {
+        return userTemp;
+    }
+
+    public void increaseUserTemp() {
+        userTemp++;
+        System.out.println("🌡️ User temp increased to " + userTemp + "°C");
         checkThreshold();
     }
 
-    public double getTemperature() {
-        return temperature;
+    public void decreaseUserTemp() {
+        userTemp--;
+        System.out.println("🌡️ User temp decreased to " + userTemp + "°C");
+        checkThreshold();
     }
 
-    public void setThreshold(double threshold) {
-        this.threshold = threshold;
+    private double getMinThreshold() {
+        return userTemp - 2;
     }
 
-    public double getThreshold() {
-        return threshold;
+    private double getMaxThreshold() {
+        return userTemp + 2;
     }
 
     private void checkThreshold() {
-        if (notificationService != null && isOn() && temperature < threshold) {
-            notificationService.notify(getId(), "🌡️ Temperature below threshold!");
+        if (notificationService != null && isOn() && userTemp < getMinThreshold()) {
+            notificationService.notify(getId(), "⚠️ User temp below minimum threshold!");
         }
     }
 
-    public void increaseTemp() {
-        temperature++;
-        System.out.println("🌡️ Temperature increased to " + temperature + "°C");
-        checkThreshold();
+    public void userStatus() {
+        System.out.println("📊 User Settings for " + getName() +
+                " → Power: " + (isOn() ? "On" : "Off") +
+                ", Desired Temp: " + userTemp + "°C " +
+                "(Min: " + getMinThreshold() + "°C, Max: " + getMaxThreshold() + "°C)");
+    }
+    public void deviceStatus() {
+        System.out.println("📊 Current Device Temp for " + getName() +
+                " → Power: " + (isOn() ? "On" : "Off") +
+                ", Current Temp: " + crntDevTmp + "°C");
     }
 
-    public void decreaseTemp() {
-        temperature--;
-        System.out.println("🌡️ Temperature decreased to " + temperature + "°C");
-        checkThreshold();
-    }
 
-    public void status() {
-        System.out.println("📊 Thermostat " + getName() +
-                " is " + (isOn() ? "On" : "Off") +
-                ", temperature: " + temperature + "°C, threshold: " + threshold + "°C");
-    }
 
     @Override
     public List<String> getAvailableActions() {
-        return List.of("increase", "decrease", "status");
+        return List.of(
+                DeviceAction.ON.name(),
+                DeviceAction.OFF.name(),
+                DeviceAction.TEMP_UP.name(),
+                DeviceAction.TEMP_DOWN.name(),
+                DeviceAction.STATUS.name()
+        );
     }
+
 
     @Override
     public void simulate(String action) {
-        switch (action.toLowerCase()) {
-            case "increase" -> increaseTemp();
-            case "decrease" -> decreaseTemp();
-            case "status" -> status();
-            default -> System.out.println("❓ Unknown action for Thermostat: " + action);
+
+    }
+
+    @Override
+    public void performAction(String action) {
+        try {
+            DeviceAction deviceAction = DeviceAction.fromString(action); // Convert string to enum
+            switch (deviceAction) {
+                case ON -> turnOn();
+                case OFF -> turnOff();
+                case TEMP_UP -> increaseUserTemp();
+                case TEMP_DOWN -> decreaseUserTemp();
+                case STATUS -> userStatus(); // ✅ Updated reference
+                default -> System.out.println("❓ Unknown action for Thermostat: " + action);
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ Invalid action: " + action);
         }
     }
 
-    @Override
-    public void simulate() {
-        // Optional default simulation
-    }
 
     @Override
     public String toDataString() {
-        return String.join("|", getType().name(), getId(), getName(),
-                String.valueOf(temperature), String.valueOf(threshold));
+        return String.join("|", getType().name(), getId(), getName(), String.valueOf(userTemp));
     }
 
     public static Thermostat fromDataString(String[] parts, NotificationService ns, Clock clock) {
-        if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid Thermostat data: " + Arrays.toString(parts));
+        if (parts.length < 4) {
+            throw new IllegalArgumentException("Invalid Thermostat data: " + String.join("|", parts));
         }
 
         String id = parts[1];
         String name = parts[2];
-        double temperature = Double.parseDouble(parts[3]);
-        double threshold = Double.parseDouble(parts[4]);
+        double userTemp = Double.parseDouble(parts[3]);
 
-        Thermostat t = new Thermostat(temperature, threshold, id, ns, clock);
-        t.setName(name); // Restore original name
-        return t;
+        return new Thermostat(id, name, userTemp, ns, clock);
     }
 
     @Override
@@ -129,8 +139,9 @@ public class Thermostat extends Device {
         return "Thermostat {" +
                 "name='" + getName() + '\'' +
                 ", id='" + getId() + '\'' +
-                ", temperature=" + temperature +
-                ", threshold=" + threshold +
+                ", userTemp=" + userTemp +
+                ", minThreshold=" + getMinThreshold() +
+                ", maxThreshold=" + getMaxThreshold() +
                 ", power=" + (isOn() ? "On" : "Off") +
                 '}';
     }

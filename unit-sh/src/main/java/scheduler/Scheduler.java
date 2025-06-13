@@ -201,6 +201,24 @@ public class Scheduler {
         saveTasksToExcel();  // ✅ Persist changes
         System.out.println("✅ Task updated successfully: " + task);
     }
+    // 🔹 Removes any conflicting scheduled tasks for a device
+    public void removeTaskIfConflicts(String deviceId, String action) {
+        Iterator<ScheduledTask> iterator = scheduledTasks.iterator();
+        while (iterator.hasNext()) {
+            ScheduledTask task = iterator.next();
+
+            // ✅ Conflicts happen when trying to turn ON/OFF but task has the opposite action
+            boolean conflictingAction = !task.getAction().equalsIgnoreCase(action) && task.getDevice().getId().equals(deviceId);
+
+            if (conflictingAction) {
+                System.out.println("⚠️ Removing conflicting task: " + task);
+                iterator.remove();
+            }
+        }
+
+        saveTasksToExcel();  // ✅ Persist changes to ensure full system synchronization
+    }
+
 
 
 }
