@@ -1,16 +1,22 @@
 package storage;
 
 import devices.*;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-import java.io.*;
-import java.nio.file.*;
-import java.time.Clock;
-import java.util.*;
-import java.util.stream.Collectors;
 import utils.ClockUtil;
 import utils.NotificationService;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Clock;
+import java.util.*;
 
 public class XlCreator {
 
@@ -20,6 +26,7 @@ public class XlCreator {
     private static final String TASKS_SHEET = "Scheduled Tasks";
 
     public static List<Device> loadDevicesFromExcel() {
+
         if (!ensureFileExists()) {
             System.err.println("❌ Error: Excel file does not exist!");
             return Collections.emptyList();
@@ -41,8 +48,10 @@ public class XlCreator {
                     String type = row.getCell(0).getStringCellValue().trim().toUpperCase();
                     String id = row.getCell(1).getStringCellValue().trim();
                     String name = row.getCell(2).getStringCellValue().trim();
+                    System.out.println("🔍 Extracted Type from Excel (Row " + row.getRowNum() + "): '" + type + "' (Length: " + type.length() + ")");
 
                     if (!DeviceType.isValidType(type)) {
+                        System.out.println("🔍 Raw Excel Type: '" + type + "'");
                         System.err.println("⚠️ Skipping row " + row.getRowNum() + ": Invalid device type '" + type + "'");
                         continue;
                     }
@@ -57,6 +66,8 @@ public class XlCreator {
                     switch (deviceType) {
                         case LIGHT -> device = new Light(id, name, clock, false);
                         case THERMOSTAT -> device = new Thermostat(id, name, 25.0, ns, clock);
+                        case WASHING_MACHINE -> device = new WashingMachine(id, name, "UnknownBrand", "UnknownModel", clock);
+                        case DRYER -> device = new Dryer(id, name, "UnknownBrand", "UnknownModel", clock);
                         default -> {
                             System.err.println("⚠️ Unsupported device type: " + type);
                             continue;
@@ -76,9 +87,6 @@ public class XlCreator {
         }
     }
 
-
-
-
     public static void createShsXlFile() throws IOException {
         Files.createDirectories(FILE_PATH.getParent());
 
@@ -95,9 +103,6 @@ public class XlCreator {
             System.out.println("✅ Excel file created with Auto-Enabler support at: " + FILE_PATH);
         }
     }
-
-
-
     public static void writeDeviceToExcel(Device device) {
         updateWorkbook(sheet -> {
             int rowNum = getFirstAvailableRow(sheet);
@@ -154,7 +159,6 @@ public class XlCreator {
         return newId;
     }
 
-
     // Internal helpers
     private static void writeDeviceRow(Device device, Row row) {
         row.createCell(0).setCellValue(device.getType().name());
@@ -173,8 +177,6 @@ public class XlCreator {
         row.createCell(7).setCellValue(device.getUpdatedTimestamp() != null ? device.getUpdatedTimestamp() : "N/A");
         row.createCell(8).setCellValue(device.getRemovedTimestamp() != null ? device.getRemovedTimestamp() : "N/A");
     }
-
-
 
     private static Device parseDeviceRow(Row row) {
         if (row == null) {
@@ -200,7 +202,6 @@ public class XlCreator {
             System.err.println("❌ Device creation failed for type: " + type);
             return null;
         }
-
         // Setting additional device properties
         device.setBrand(getCellValue(row, 3));
         device.setModel(getCellValue(row, 4));
@@ -218,12 +219,9 @@ public class XlCreator {
                 System.err.println("⚠️ Warning: Failed to parse actions for device ID " + id + " → " + e.getMessage());
             }
         }
-
         System.out.println("✅ Successfully parsed device: " + device.getId() + " (" + device.getType() + ")");
         return device;
     }
-
-
 
     private static String getCellValue(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);

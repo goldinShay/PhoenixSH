@@ -6,6 +6,11 @@ import java.util.List;
 
 public class GenericDevice extends Device {
 
+    @Override
+    public void status() {
+
+    }
+
     public GenericDevice(String id, String name, DeviceType type, Clock clock) {
         super(id, name, type, clock);
     }

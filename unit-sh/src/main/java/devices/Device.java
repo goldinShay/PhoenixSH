@@ -38,6 +38,8 @@ public abstract class Device implements Runnable {
     private ZonedDateTime removedTimestamp;  // ✅ Marks removal time
 
     private static final int TEST_DURATION_MS = 5_000;
+    public abstract void status();
+
 
     // ✅ Constructor with unique ID enforcement
     public Device(String deviceId, String name, DeviceType type, Clock clock) {

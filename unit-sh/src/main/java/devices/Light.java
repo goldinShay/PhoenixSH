@@ -78,6 +78,11 @@ public class Light extends Device {
         System.out.println("🚫 Auto Mode Disabled for " + getName());
     }
 
+    @Override
+    public void status() {
+
+    }
+
     // 🔄 Helper methods
     @Override
     public void turnOn() {

@@ -1,43 +1,27 @@
 package devices;
 
+import storage.DeviceStorage;
+
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 
 public class WashingMachine extends Device {
+
     private String brand;
     private String model;
     private boolean running;
+    private static final String DEFAULT_BRAND = "Unknown";
+    private static final String DEFAULT_MODEL = "Unknown";
     private static int counter = 1;
-
-    private static String generateId() {
-        return "WM" + String.format("%03d", counter++);
-    }
-
-    // ✅ Constructor for loading from saved data (brand/model provided)
-    public WashingMachine(String id, String name, String brand, String model) {
-        super(id, name, DeviceType.WASHING_MACHINE, Clock.systemDefaultZone());
-        this.brand = brand;
-        this.model = model;
-        this.running = false;
-    }
-
-    // ✅ Constructor for interactive creation (brand/model provided, id auto-generated)
-    public WashingMachine(String name, String brand, String model, Clock clock) {
-        super(generateId(), name, DeviceType.WASHING_MACHINE, clock);
-        this.brand = brand;
-        this.model = model;
-        this.running = false;
-    }
-
-    // ✅ Constructor for DeviceFactory use (brand/model unknown)
-    public WashingMachine(String id, String name, Clock clock) {
+    // ✅ Constructor for loading from storage
+    public WashingMachine(String id, String name, String brand, String model, Clock clock) {
         super(id, name, DeviceType.WASHING_MACHINE, clock);
-        this.brand = "Unknown";
-        this.model = "Unknown";
+        this.brand = brand;
+        this.model = model;
         this.running = false;
     }
 
+    // 🌟 Start the washing machine
     public void start() {
         if (!isOn()) {
             System.out.println("⚠️ Please turn on the washing machine first.");
@@ -48,18 +32,22 @@ public class WashingMachine extends Device {
         } else {
             running = true;
             System.out.println("🧺 Washing machine started.");
+            DeviceStorage.updateDeviceState(getId(), DeviceAction.START.name());
         }
     }
 
+    // 🌟 Stop the washing machine
     public void stop() {
         if (running) {
             running = false;
             System.out.println("🛑 Washing machine stopped.");
+            DeviceStorage.updateDeviceState(getId(), DeviceAction.STOP.name());
         } else {
             System.out.println("ℹ️ Washing machine is not running.");
         }
     }
 
+    // 🔎 Getters
     public String getBrand() {
         return brand;
     }
@@ -72,15 +60,55 @@ public class WashingMachine extends Device {
         return running;
     }
 
-    public static WashingMachine fromDataString(String[] parts, Clock clock) {
-        if (parts.length < 5) {
-            throw new IllegalArgumentException("Invalid WashingMachine data: " + Arrays.toString(parts));
+    // 🌟 Provide available actions
+    @Override
+    public List<String> getAvailableActions() {
+        return List.of(
+                DeviceAction.ON.name(),
+                DeviceAction.OFF.name(),
+                DeviceAction.START.name(),
+                DeviceAction.STOP.name(),
+                DeviceAction.STATUS.name()
+        );
+    }
+
+    @Override
+    public void simulate(String action) {
+
+    }
+
+    // 🌟 Perform actions based on input
+    @Override
+    public void performAction(String action) {
+        try {
+            DeviceAction deviceAction = DeviceAction.fromString(action);
+            switch (deviceAction) {
+                case ON -> turnOn();
+                case OFF -> turnOff();
+                case START -> start();
+                case STOP -> stop();
+                case STATUS -> status();
+                default -> System.out.println("❓ Unknown action for WashingMachine: " + action);
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ Invalid action: " + action);
         }
-        String id = parts[1];
-        String name = parts[2];
-        String brand = parts[3];
-        String model = parts[4];
-        return new WashingMachine(id, name, brand, model);
+    }
+
+    // 🌟 Display washing machine status
+    @Override
+    public void status() {
+        System.out.println("📊 WashingMachine " + getName() +
+                " is " + (isOn() ? "On" : "Off") +
+                ", running: " + (running ? "Yes" : "No") +
+                ", brand: " + brand +
+                ", model: " + model);
+    }
+
+    // 🌟 Serialize device to string format
+    @Override
+    public String toDataString() {
+        return String.join("|", getType().name(), getId(), getName(), brand, model, String.valueOf(running));
     }
 
     @Override
@@ -93,39 +121,5 @@ public class WashingMachine extends Device {
                 ", power=" + (isOn() ? "On" : "Off") +
                 ", running=" + (running ? "Yes" : "No") +
                 '}';
-    }
-
-    @Override
-    public List<String> getAvailableActions() {
-        return List.of("start", "stop", "status");
-    }
-
-    @Override
-    public void simulate(String action) {
-        switch (action.toLowerCase()) {
-            case "start":
-                start();
-                break;
-            case "stop":
-                stop();
-                break;
-            case "status":
-                System.out.println("📊 Washing machine " + getName()
-                        + " is " + (isOn() ? "On" : "Off")
-                        + " and " + (running ? "Running" : "Idle"));
-                break;
-            default:
-                System.out.println("❓ Unknown action for WashingMachine: " + action);
-        }
-    }
-
-    @Override
-    public void simulate() {
-        // Optional default simulation logic
-    }
-
-    @Override
-    public String toDataString() {
-        return String.join("|", getType().toString(), getId(), getName(), brand, model);
     }
 }

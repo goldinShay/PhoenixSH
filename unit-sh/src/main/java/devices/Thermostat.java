@@ -67,18 +67,15 @@ public class Thermostat extends Device {
             notificationService.notify(getId(), "⚠️ User temp below minimum threshold!");
         }
     }
+    @Override
+    public void status() {
+        System.out.println("📊 Thermostat " + getName() +
+                " → Power: " + (isOn() ? "On" : "Off") +
+                ", User Temp: " + userTemp + "°C " +
+                "(Min: " + getMinThreshold() + "°C, Max: " + getMaxThreshold() + "°C), " +
+                "Current Device Temp: " + crntDevTmp + "°C");
+    }
 
-    public void userStatus() {
-        System.out.println("📊 User Settings for " + getName() +
-                " → Power: " + (isOn() ? "On" : "Off") +
-                ", Desired Temp: " + userTemp + "°C " +
-                "(Min: " + getMinThreshold() + "°C, Max: " + getMaxThreshold() + "°C)");
-    }
-    public void deviceStatus() {
-        System.out.println("📊 Current Device Temp for " + getName() +
-                " → Power: " + (isOn() ? "On" : "Off") +
-                ", Current Temp: " + crntDevTmp + "°C");
-    }
 
 
 
@@ -99,6 +96,8 @@ public class Thermostat extends Device {
 
     }
 
+
+
     @Override
     public void performAction(String action) {
         try {
@@ -108,7 +107,7 @@ public class Thermostat extends Device {
                 case OFF -> turnOff();
                 case TEMP_UP -> increaseUserTemp();
                 case TEMP_DOWN -> decreaseUserTemp();
-                case STATUS -> userStatus(); // ✅ Updated reference
+                case STATUS -> status(); // ✅ Updated reference
                 default -> System.out.println("❓ Unknown action for Thermostat: " + action);
             }
         } catch (IllegalArgumentException e) {

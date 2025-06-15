@@ -11,6 +11,8 @@ import java.util.*;
 public class DeviceFactory {
 
     private static final Clock clock = Clock.systemDefaultZone();
+    private static final Scanner scanner = new Scanner(System.in);
+
 
     // 🌟 The method you need — based on DeviceType enum
     public static Device createDevice(
@@ -28,8 +30,26 @@ public class DeviceFactory {
                 return new Light(newId, name, clock, savedState); // ✅ Pass state into constructor
 
             }
-            case DRYER -> throw new UnsupportedOperationException("Dryer support coming soon!"); // ✅ Properly disables Dryer
-            case WASHING_MACHINE -> throw new UnsupportedOperationException("Washing Machine support coming soon!");
+            case DRYER -> {
+                System.out.print("Enter the brand of the Dryer: ");
+                String brand = scanner.nextLine().trim();
+
+                System.out.print("Enter the model of the Dryer: ");
+                String model = scanner.nextLine().trim();
+
+                return new Dryer(id, name, brand, model, clock); // ✅ Just use the passed ID!
+            }
+            case WASHING_MACHINE -> {
+                System.out.print("Enter the brand of the Washing Machine: ");
+                String brand = scanner.nextLine().trim();
+
+                System.out.print("Enter the model of the Washing Machine: ");
+                String model = scanner.nextLine().trim();
+
+                return new WashingMachine(id, name, brand, model, clock); // ✅ Just use the passed ID!
+            }
+
+
             case THERMOSTAT -> {
                 Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet()); // ✅ Retrieve existing IDs
                 String newId = XlCreator.getNextAvailableId("TH", allIds); // ✅ Generate unique ID
