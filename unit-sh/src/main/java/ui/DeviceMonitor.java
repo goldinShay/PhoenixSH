@@ -4,7 +4,11 @@ import devices.Device;
 import devices.DeviceAction;
 import devices.Thermostat;
 import scheduler.Scheduler;
+import sensors.Sensor;
 import storage.DeviceStorage;
+import storage.SensorStorage;
+import storage.XlCreator;
+import utils.AutoOpManager;
 import utils.EmailService;
 
 import java.util.Map;
@@ -29,7 +33,7 @@ public class DeviceMonitor {
 
             if (deviceId.equals("0")) break;
 
-            Device selectedDevice = devices.get(deviceId);
+            Device selectedDevice = DeviceStorage.getDevices().get(deviceId);
             if (selectedDevice == null) {
                 System.out.println("❌ Invalid ID. Try again.");
                 continue;
@@ -45,16 +49,118 @@ public class DeviceMonitor {
             System.out.println(device.getName() + " is currently " + device.getState());
             System.out.println("1 - Set ON / Force ON (removes conflicting scheduler tasks)");
             System.out.println("2 - Set OFF / Force OFF (removes conflicting scheduler tasks)");
-            System.out.println("3 - AutoOp (coming soon)");
+            System.out.println("3 - AutoOp");
             System.out.println("4 - Actions");
-            System.out.println("5 - Back");
+            System.out.println("5 - Test Linked Sensor");
+            System.out.println("6 - Back");
             System.out.print("Choose an option: ");
             String input = scanner.nextLine().trim();
 
             switch (input) {
                 case "1" -> setDeviceState(device, scheduler, true);
                 case "2" -> setDeviceState(device, scheduler, false);
-                case "3" -> System.out.println("🔧 AutoOp feature coming soon...");
+                case "3" -> {
+                    System.out.println("\n=== AutoOp Settings ===");
+                    System.out.println("Current AutoOp: " + (device.isAutomationEnabled() ? "🟢 ENABLED" : "🔴 DISABLED"));
+                    System.out.println("Linked Sensor: " + (device.getAutomationSensorId() != null ? device.getAutomationSensorId() : "None"));
+                    System.out.println("1 - ENABLE AutoOp");
+                    System.out.println("2 - DISABLE AutoOp");
+                    System.out.println("3 - Back");
+
+                    System.out.print("Choose option: ");
+                    String autoChoice = scanner.nextLine().trim();
+
+                    switch (autoChoice) {
+                        case "1" -> {
+                            System.out.println("\nAvailable Sensors:");
+                            SensorStorage.getSensors().forEach((sid, sensor) ->
+                                    System.out.printf(" - %s (%s, %s)%n", sid, sensor.getSensorName(), sensor.getUnit()));
+
+                            System.out.print("Enter Sensor ID to assign as Master: ");
+                            String masterId = scanner.nextLine().trim();
+
+                            Sensor selectedSensor = SensorStorage.getSensors().get(masterId);
+
+                            if (selectedSensor == null) {
+                                System.out.println("❌ Invalid Sensor ID.");
+                            } else {
+                                // 💡 Always fetch device from DeviceStorage to avoid instance desync
+                                Device actualDevice = DeviceStorage.getDevices().get(device.getId());
+                                actualDevice.setAutomationEnabled(true);
+                                actualDevice.setAutomationSensorId(masterId);
+
+                                if (!selectedSensor.getSlaves().contains(actualDevice)) {
+                                    selectedSensor.addSlave(actualDevice);
+                                }
+
+                                if (XlCreator.updateDevice(actualDevice)) {
+                                    System.out.println("💾 AutoOp status saved to Excel.");
+                                } else {
+                                    System.out.println("⚠️ Failed to update Excel with AutoOp state.");
+                                }
+
+                                Device freshDevice = DeviceStorage.getDevices().get(actualDevice.getId()); // 🧼 Fresh from storage
+
+                                System.out.printf("✅ Linking %s (%s) → AUTO-ON: %.1f | AUTO-OFF: %.1f%n",
+                                        freshDevice.getName(),
+                                        freshDevice.getId(),
+                                        freshDevice.getAutoOnThreshold(),
+                                        freshDevice.getAutoOffThreshold());
+
+                                AutoOpManager.persistLink(freshDevice, selectedSensor);
+
+                                selectedSensor.notifySlaves(selectedSensor.getCurrentValue());
+
+                                System.out.println("✅ AutoOp ENABLED for device: " + actualDevice.getName());
+                                System.out.println("🔗 Linked to sensor: " + selectedSensor.getSensorName() + " (" + masterId + ")");
+                                System.out.printf("📊 Thresholds → Auto-ON: %.0f %s | Auto-OFF: %.0f %s%n",
+                                        actualDevice.getAutoOnThreshold(), selectedSensor.getUnit(),
+                                        actualDevice.getAutoOffThreshold(), selectedSensor.getUnit());
+                            }
+
+                        }
+
+                        case "2" -> {
+                            // 🌐 Capture sensor ID before we null it (for cleanup)
+                            String sensorId = device.getAutomationSensorId();
+
+                            // 🔕 Disable AutoOp in memory
+                            device.setAutomationEnabled(false);
+                            device.setAutomationSensorId(null);
+
+                            // 💾 Save changes to Excel
+                            if (XlCreator.updateDevice(device)) {
+                                System.out.println("💾 AutoOp DISABLED and saved to Excel.");
+
+                                // 🧹 Remove from sensor’s in-memory slave list
+                                Sensor sensor = SensorStorage.getSensors().get(sensorId);
+                                if (sensor != null) {
+                                    sensor.getSlaves().remove(device);
+                                    System.out.printf("🚪 Removed '%s' from sensor '%s' slave list%n",
+                                            device.getId(), sensor.getSensorId());
+                                }
+
+                                // 📄 Remove from Excel’s Sense_Control sheet
+                                if (XlCreator.removeSensorLink(device.getId())) {
+                                    System.out.println("🧻 Device mapping removed from Sense_Control sheet.");
+                                } else {
+                                    System.out.println("⚠️ Failed to remove mapping from Sense_Control.");
+                                }
+
+                            } else {
+                                System.out.println("⚠️ Failed to save AutoOp disablement.");
+                            }
+
+                            System.out.println("✅ AutoOp DISABLED for device: " + device.getName());
+                        }
+
+
+                        case "3" -> System.out.println("↩️ Back to device menu.");
+                        default -> System.out.println("❌ Invalid choice.");
+                    }
+                }
+
+
                 case "4" -> {
                     if (device instanceof Thermostat thermostat) {
                         while (true) {
@@ -81,7 +187,7 @@ public class DeviceMonitor {
                                     thermostat.decreaseUserTemp();
                                     System.out.println("🌡️ User temp decreased to " + thermostat.getUserTemp() + "°C.");
                                 }
-                                case "4" -> { return; } // ✅ Back to device control menu
+                                case "4" -> { return; }
                                 default -> System.out.println("❌ Invalid option. Please choose 1-4.");
                             }
                         }
@@ -90,11 +196,37 @@ public class DeviceMonitor {
                     }
                 }
 
-                case "5" -> { return; } // ✅ Returns to the monitor menu
-                default -> System.out.println("❌ Invalid option. Please choose 1-5.");
+                case "5" -> {
+                    if (!device.isAutomationEnabled()) {
+                        System.out.println("⚠️ Automation is not enabled. No sensor linked.");
+                        break;
+                    }
+
+                    String sensorId = device.getAutomationSensorId();
+                    Sensor sensor = SensorStorage.getSensors().get(sensorId);
+
+                    if (sensor == null) {
+                        System.out.println("❌ Linked sensor not found: " + sensorId);
+                    } else {
+                        System.out.println("\n🧪 Testing Linked Sensor: " + sensor.getSensorName() + " (" + sensorId + ")");
+                        sensor.testSensorBehavior();
+                    }
+                }
+
+                case "6" -> {
+                    System.out.println("↩️ Returning to Monitor Menu...");
+                    return;
+                }
+
+
+
+
+                default -> System.out.println("❌ Invalid option. Please choose 1-6.");
             }
         }
     }
+
+
 
     private static void setDeviceState(Device device, Scheduler scheduler, boolean turnOn) {
         String action = turnOn ? DeviceAction.ON.name() : DeviceAction.OFF.name();

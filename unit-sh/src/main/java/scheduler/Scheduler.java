@@ -3,7 +3,9 @@ package scheduler;
 import devices.Device;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import sensors.Sensor;
 import storage.DeviceStorage;
+import utils.Log;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -16,21 +18,19 @@ public class Scheduler {
     private static final String TASKS_SHEET = "Scheduled Tasks";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final long CHECK_INTERVAL_MS = 30 * 1000;
-
-    private final Map<String, Device> deviceRegistry;
     private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
     private Timer schedulerTimer;
+    private static final boolean DEBUG_MODE = false; // change to true when needed
+
 
     // 🔹 **Single Constructor: Guarantees deviceRegistry is initialized properly**
-    public Scheduler(Map<String, Device> deviceRegistry) {
-        this.deviceRegistry = (deviceRegistry != null) ? deviceRegistry : new HashMap<>();
-        System.out.println("📅 Scheduler initialized with access to devices.");
-    }
+    private final Map<String, Device> deviceRegistry;
+    private final Map<String, Sensor> sensorRegistry;
 
-    // 🔹 Registers a new device into the Scheduler
-    public void registerDevice(Device device) {
-        deviceRegistry.put(device.getId(), device);
-        System.out.println("🔌 Registered device: " + device.getId() + " (" + device.getName() + ")");
+    public Scheduler(Map<String, Device> deviceRegistry, Map<String, Sensor> sensorRegistry) {
+        this.deviceRegistry = (deviceRegistry != null) ? deviceRegistry : new HashMap<>();
+        this.sensorRegistry = (sensorRegistry != null) ? sensorRegistry : new HashMap<>();
+        System.out.println("📅 Scheduler initialized with access to devices and sensors.");
     }
 
     // 🔹 Schedules a new task and saves it to Excel
@@ -111,14 +111,28 @@ public class Scheduler {
 
     // 🔹 Saves tasks to Excel without wiping other sheets
     private void saveTasksToExcel() {
+        Log.debug("📍 saveTasksToExcel() invoked — checking workbook integrity...");
         File file = new File(EXCEL_FILE);
         Workbook workbook;
 
-        try (FileInputStream fis = file.exists() ? new FileInputStream(file) : null) {
-            workbook = fis != null ? new XSSFWorkbook(fis) : new XSSFWorkbook();
+        // ✅ Safe file loading: only write if file can be read
+        try (FileInputStream fis = new FileInputStream(file)) {
+            workbook = new XSSFWorkbook(fis);
         } catch (IOException e) {
-            System.err.println("⚠️ Warning: Failed to read existing Excel file. Creating a new workbook.");
-            workbook = new XSSFWorkbook();
+            System.err.println("❌ Failed to open Excel file for saving tasks. Scheduled tasks will NOT be saved to avoid data loss.");
+            return;
+        }
+
+        // 🚨 Validate critical sheet presence before proceeding
+        if (workbook.getSheet("Devices") == null ||
+                workbook.getSheet("Sensors") == null ||
+                workbook.getSheet("Sense_Control") == null) {
+            System.err.println("🚫 Missing one or more critical sheets. Aborting ScheduledTasks save to protect Excel integrity.");
+            System.out.println("🧾 Sheets currently loaded in workbook:");
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                System.out.println(" - " + workbook.getSheetName(i));
+            }
+            return;
         }
 
         Sheet sheet = workbook.getSheet(TASKS_SHEET);
@@ -133,7 +147,14 @@ public class Scheduler {
             }
         }
 
-        int rowIndex = 1; // ✅ Always starts from row 1 to avoid repeated headers
+        // 🔄 Clear existing task rows (except header)
+        for (int i = sheet.getLastRowNum(); i > 0; i--) {
+            Row row = sheet.getRow(i);
+            if (row != null) sheet.removeRow(row);
+        }
+
+        // 📝 Write fresh task list
+        int rowIndex = 1;
         for (ScheduledTask task : scheduledTasks) {
             Row row = sheet.createRow(rowIndex++);
             row.createCell(0).setCellValue(task.getDevice().getId());
@@ -143,13 +164,25 @@ public class Scheduler {
             row.createCell(4).setCellValue(task.getRepeat());
         }
 
+        // 💾 Log workbook state before final save
+        Log.debug("💾 ScheduledTasks: Writing workbook with these sheets:");
+        if (Log.DEBUG_MODE) {
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                System.out.println(" - " + workbook.getSheetName(i));
+            }
+        }
+
+
+
         try (FileOutputStream fos = new FileOutputStream(EXCEL_FILE)) {
             workbook.write(fos);
-//            System.out.println("✅ Scheduled tasks saved to Excel without deleting other sheets.");
+            Log.debug("✅ Scheduled tasks saved successfully.");
         } catch (IOException e) {
             System.err.println("❌ Failed to save scheduled tasks: " + e.getMessage());
         }
     }
+
+
 
     // 🔹 Loads tasks from Excel and correctly links them to registered devices
     public void loadTasksFromExcel() {

@@ -1,5 +1,6 @@
 package devices;
 
+import utils.DeviceDefaults;
 import utils.NotificationService;
 
 import java.time.Clock;
@@ -7,53 +8,49 @@ import java.util.List;
 
 public class Thermostat extends Device {
 
+    // ─── ⚙ Configuration & Runtime State ───
     private static final double DEFAULT_USER_TEMP = 25.0;
-    private static int counter = 1;
-
-    private double userTemp;
     private final NotificationService notificationService;
-    private double crntDevTmp = 20.20; // ✅ Device's actual temperature
+    private double userTemp;
+    private double crntDevTmp = 20.20;
 
-
-    private static String generateId() {
-        return "TM" + String.format("%03d", counter++);
-    }
-
-    public Thermostat(NotificationService notificationService, Clock clock) {
-        super(generateId(), "Thermostat-" + counter, DeviceType.THERMOSTAT, clock);
-        this.userTemp = DEFAULT_USER_TEMP;
-        this.notificationService = notificationService;
-    }
-
+    // ─── 🧱 Construction ───
     public Thermostat(String id, String name, double userTemp,
                       NotificationService notificationService, Clock clock) {
-        super(id, name, DeviceType.THERMOSTAT, clock);
+        super(id, name, DeviceType.THERMOSTAT, clock,
+                DeviceDefaults.getDefaultAutoOn(DeviceType.THERMOSTAT),
+                DeviceDefaults.getDefaultAutoOn(DeviceType.THERMOSTAT)); // mirror OFF
         this.userTemp = userTemp;
         this.notificationService = notificationService;
     }
-    public void setUserTemp(double temp) {
-        this.userTemp = temp;
-        System.out.println("🌡️ User Temp set to " + temp + "°C.");
-        checkThreshold(); // ✅ Ensure threshold checks happen after updates
+    public Thermostat(String id, String name, Clock clock, boolean state, double autoOn, double autoOff) {
+        super(id, name, DeviceType.THERMOSTAT, clock, autoOn, autoOff);
+        this.notificationService = null;
+        this.userTemp = DEFAULT_USER_TEMP;
     }
 
 
-    public double getUserTemp() {
-        return userTemp;
+
+    // ─── 🎛️ User Controls ───
+    public void setUserTemp(double temp) {
+        this.userTemp = temp;
+        System.out.printf("🌡️ User Temp set to %.1f°C%n", temp);
+        checkThreshold();
     }
 
     public void increaseUserTemp() {
         userTemp++;
-        System.out.println("🌡️ User temp increased to " + userTemp + "°C");
+        System.out.printf("🌡️ User temp increased to %.1f°C%n", userTemp);
         checkThreshold();
     }
 
     public void decreaseUserTemp() {
         userTemp--;
-        System.out.println("🌡️ User temp decreased to " + userTemp + "°C");
+        System.out.printf("🌡️ User temp decreased to %.1f°C%n", userTemp);
         checkThreshold();
     }
 
+    // ─── 🧠 Threshold Logic ───
     private double getMinThreshold() {
         return userTemp - 2;
     }
@@ -67,56 +64,44 @@ public class Thermostat extends Device {
             notificationService.notify(getId(), "⚠️ User temp below minimum threshold!");
         }
     }
-    @Override
-    public void status() {
-        System.out.println("📊 Thermostat " + getName() +
-                " → Power: " + (isOn() ? "On" : "Off") +
-                ", User Temp: " + userTemp + "°C " +
-                "(Min: " + getMinThreshold() + "°C, Max: " + getMaxThreshold() + "°C), " +
-                "Current Device Temp: " + crntDevTmp + "°C");
+
+    // ─── 📊 Status Output ───
+        public void status() {
+        System.out.printf("📊 Thermostat %s (%s)%n", getName(), getId());
+        System.out.printf("   🔌 Power: %s%n", isOn() ? "ON" : "OFF");
+        System.out.printf("   🌡️ Target: %.1f°C | Current: %.1f°C%n", userTemp, crntDevTmp);
+        System.out.printf("   📏 Range: %.1f°C – %.1f°C%n", getMinThreshold(), getMaxThreshold());
     }
 
-
-
-
+    // ─── 🎮 Action Handling ───
     @Override
     public List<String> getAvailableActions() {
-        return List.of(
-                DeviceAction.ON.name(),
-                DeviceAction.OFF.name(),
-                DeviceAction.TEMP_UP.name(),
-                DeviceAction.TEMP_DOWN.name(),
-                DeviceAction.STATUS.name()
-        );
+        return List.of("on", "off", "temp_up", "temp_down", "status");
     }
-
 
     @Override
     public void simulate(String action) {
-
+        performAction(action); // pass-through
     }
-
-
 
     @Override
     public void performAction(String action) {
         try {
-            DeviceAction deviceAction = DeviceAction.fromString(action); // Convert string to enum
+            DeviceAction deviceAction = DeviceAction.fromString(action);
             switch (deviceAction) {
                 case ON -> turnOn();
                 case OFF -> turnOff();
                 case TEMP_UP -> increaseUserTemp();
                 case TEMP_DOWN -> decreaseUserTemp();
-                case STATUS -> status(); // ✅ Updated reference
-                default -> System.out.println("❓ Unknown action for Thermostat: " + action);
+                case STATUS -> status();
+                default -> System.out.printf("❓ Unknown action: '%s'%n", action);
             }
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Invalid action: " + action);
+            System.out.printf("❌ Invalid action: '%s'%n", action);
         }
     }
 
-
-    @Override
+    // ─── 📦 Persistence ───
     public String toDataString() {
         return String.join("|", getType().name(), getId(), getName(), String.valueOf(userTemp));
     }
@@ -135,13 +120,12 @@ public class Thermostat extends Device {
 
     @Override
     public String toString() {
-        return "Thermostat {" +
-                "name='" + getName() + '\'' +
-                ", id='" + getId() + '\'' +
-                ", userTemp=" + userTemp +
-                ", minThreshold=" + getMinThreshold() +
-                ", maxThreshold=" + getMaxThreshold() +
-                ", power=" + (isOn() ? "On" : "Off") +
-                '}';
+        return String.format("Thermostat{name='%s', id='%s', userTemp=%.1f°C, power=%s}",
+                getName(), getId(), userTemp, isOn() ? "ON" : "OFF");
+    }
+
+    // ─── Optional: Expose userTemp for other systems ───
+    public double getUserTemp() {
+        return userTemp;
     }
 }

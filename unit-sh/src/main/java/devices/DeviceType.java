@@ -6,7 +6,8 @@ public enum DeviceType {
     LIGHT,
     THERMOSTAT,
     WASHING_MACHINE,
-    DRYER;
+    DRYER,
+    SENSOR;
 
     public static DeviceType fromString(String input) {
         try {

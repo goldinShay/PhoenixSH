@@ -1,32 +1,45 @@
 package devices;
 
 import storage.DeviceStorage;
-import utils.NotificationService;
+import utils.DeviceDefaults;
 
 import java.time.Clock;
 import java.util.List;
 
 public class Dryer extends Device {
-    private String brand;
-    private String model;
-    private boolean running;
+
+    // ─── Identity ───
+    private final String brand;
+    private final String model;
+    private boolean running = false;
+
     private static final String DEFAULT_BRAND = "Unknown";
     private static final String DEFAULT_MODEL = "Unknown";
 
-    // ✅ Constructor for interactive creation
+    // ─── Constructors ───
+
     public Dryer(String id, String name, String brand, String model, Clock clock) {
-        super(id, name, DeviceType.DRYER, clock);
-        this.brand = brand;
-        this.model = model;
-        this.running = false;
+        super(id, name, DeviceType.DRYER, clock,
+                DeviceDefaults.getDefaultAutoOn(DeviceType.DRYER),
+                DeviceDefaults.getDefaultAutoOn(DeviceType.DRYER)); // Mirror OFF
+        this.brand = brand != null ? brand : DEFAULT_BRAND;
+        this.model = model != null ? model : DEFAULT_MODEL;
+    }
+    public Dryer(String id, String name, Clock clock, boolean state, double autoOn, double autoOff) {
+        super(id, name, DeviceType.DRYER, clock, autoOn, autoOff);
+        this.brand = "Unknown";
+        this.model = "Unknown";
     }
 
-    // ✅ Constructor for loading from file (ensures proper restoration)
-    public Dryer(String id, String name, Clock clock) {
-        this(id, name, DEFAULT_BRAND, DEFAULT_MODEL, clock);
+
+    // ─── Runtime State ───
+
+    public boolean isRunning() {
+        return running;
     }
 
-    // 🌟 Start the dryer
+    // ─── Actions ───
+
     public void start() {
         if (!isOn()) {
             System.out.println("⚠️ Dryer is OFF. Turn it on first.");
@@ -41,7 +54,6 @@ public class Dryer extends Device {
         }
     }
 
-    // 🌟 Stop the dryer
     public void stop() {
         if (running) {
             running = false;
@@ -52,53 +64,41 @@ public class Dryer extends Device {
         }
     }
 
-    // 🌟 Status reporting
-    @Override
-    public void status() {
-        System.out.println("📊 Dryer " + getName() +
-                " is " + (isOn() ? "On" : "Off") +
-                ", running: " + (running ? "Yes" : "No") +
-                ", brand: " + brand +
-                ", model: " + model);
+        public void status() {
+        System.out.printf("📊 Dryer %s (%s)%n", getName(), getId());
+        System.out.printf("   🔌 Power: %s | 🔁 Running: %s%n", isOn() ? "ON" : "OFF", running ? "YES" : "NO");
+        System.out.printf("   🏷️ Brand: %s | Model: %s%n", brand, model);
     }
 
-    // 🔄 Perform actions dynamically
+    @Override
+    public List<String> getAvailableActions() {
+        return List.of("on", "off", "start", "stop", "status");
+    }
+
+    @Override
+    public void simulate(String action) {
+        performAction(action); // Mirror behavior
+    }
+
     @Override
     public void performAction(String action) {
         try {
-            DeviceAction deviceAction = DeviceAction.fromString(action);
-            switch (deviceAction) {
+            DeviceAction act = DeviceAction.fromString(action);
+            switch (act) {
                 case ON -> turnOn();
                 case OFF -> turnOff();
                 case START -> start();
                 case STOP -> stop();
                 case STATUS -> status();
-                default -> System.out.println("❓ Unknown action for Dryer: " + action);
+                default -> System.out.printf("❓ Unknown action: '%s'%n", action);
             }
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Invalid action: " + action);
+            System.out.printf("❌ Invalid action: '%s'%n", action);
         }
     }
 
-    // 🌟 Available actions for Device Monitor Menu
-    @Override
-    public List<String> getAvailableActions() {
-        return List.of(
-                DeviceAction.ON.name(),
-                DeviceAction.OFF.name(),
-                DeviceAction.START.name(),
-                DeviceAction.STOP.name(),
-                DeviceAction.STATUS.name()
-        );
-    }
+    // ─── Persistence ───
 
-    @Override
-    public void simulate(String action) {
-
-    }
-
-    // 🌟 Ensure device serialization is properly formatted for storage
-    @Override
     public String toDataString() {
         return String.join("|",
                 getType().name(),
@@ -106,36 +106,23 @@ public class Dryer extends Device {
                 getName(),
                 brand,
                 model,
-                String.valueOf(running)
-        );
+                String.valueOf(running));
     }
 
-    // ✅ Restore Dryer from storage
     public static Dryer fromDataString(String[] parts, Clock clock) {
         if (parts.length < 6) {
             throw new IllegalArgumentException("Invalid Dryer data: " + String.join(", ", parts));
         }
 
-        String id = parts[1];
-        String name = parts[2];
-        String brand = parts[3];
-        String model = parts[4];
-        boolean running = Boolean.parseBoolean(parts[5]);
-
-        Dryer dryer = new Dryer(id, name, brand, model, clock);
-        dryer.running = running;
+        Dryer dryer = new Dryer(parts[1], parts[2], parts[3], parts[4], clock);
+        dryer.running = Boolean.parseBoolean(parts[5]);
         return dryer;
     }
 
     @Override
     public String toString() {
-        return "Dryer {" +
-                "name='" + getName() + '\'' +
-                ", id='" + getId() + '\'' +
-                ", brand='" + brand + '\'' +
-                ", model='" + model + '\'' +
-                ", power=" + (isOn() ? "On" : "Off") +
-                ", running=" + (running ? "Yes" : "No") +
-                '}';
+        return String.format("Dryer{name='%s', id='%s', brand='%s', model='%s', power=%s, running=%s}",
+                getName(), getId(), brand, model,
+                isOn() ? "ON" : "OFF", running ? "YES" : "NO");
     }
 }

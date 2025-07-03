@@ -1,9 +1,17 @@
 package devices;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import storage.DeviceStorage;
 import storage.XlCreator;
+import utils.Log;
 import utils.NotificationService;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.Clock;
 import java.util.*;
 
@@ -24,12 +32,49 @@ public class DeviceFactory {
     ) {
         switch (type) {
             case LIGHT -> {
-                Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet());  // ✅ Retrieve existing IDs
-                String newId = XlCreator.getNextAvailableId("LI", allIds);  // ✅ Generate unique ID
-                boolean savedState = getSavedState(newId); // ✅ Retrieve last known state
-                return new Light(newId, name, clock, savedState); // ✅ Pass state into constructor
+                boolean savedState = getSavedState(id);
 
+                double autoOnThreshold = 1024.0;
+                double autoOffThreshold = 1050.0;
+                boolean autoEnabled = false; // 🧠 Default false
+
+                try (FileInputStream fis = new FileInputStream(XlCreator.getFilePath().toFile());
+                     Workbook workbook = new XSSFWorkbook(fis)) {
+
+                    Sheet deviceSheet = workbook.getSheet("Devices");
+                    if (deviceSheet != null) {
+                        for (Row row : deviceSheet) {
+                            if (row.getRowNum() == 0) continue;
+                            String deviceId = row.getCell(1).getStringCellValue();
+                            if (deviceId.equalsIgnoreCase(id)) {
+                                autoOnThreshold = row.getCell(6) != null ? row.getCell(6).getNumericCellValue() : autoOnThreshold;
+                                autoOffThreshold = row.getCell(7) != null ? row.getCell(7).getNumericCellValue() : autoOffThreshold;
+
+                                Cell autoCell = row.getCell(5);
+                                if (autoCell != null) {
+                                    autoEnabled = switch (autoCell.getCellType()) {
+                                        case BOOLEAN -> autoCell.getBooleanCellValue();
+                                        case STRING -> Boolean.parseBoolean(autoCell.getStringCellValue().trim());
+                                        default -> false;
+                                    };
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    Log.error("🛑 Failed to load threshold values for " + id + ": " + e.getMessage());
+                }
+
+                Light light = new Light(id, name, clock, savedState, autoOnThreshold, autoOffThreshold);
+                light.setAutomationEnabled(autoEnabled); // 💡 Crucial: apply loaded AutoOp flag
+
+                return light;
             }
+
+
+
+
             case DRYER -> {
                 System.out.print("Enter the brand of the Dryer: ");
                 String brand = scanner.nextLine().trim();
@@ -71,21 +116,6 @@ public class DeviceFactory {
         }
         return false; // ✅ Defaults to OFF if no prior state exists
     }
-
-
-
-    // 🧭 Optional fallback for Excel loader etc.
-    public static Device createDeviceByType(String typeName) {
-        return createDeviceByType(
-                typeName,
-                "UNKNOWN_ID",
-                "Unnamed Device",
-                Clock.systemDefaultZone(),                    // ⏰ Default clock
-                DeviceFactory.getDevices()                    // 🗺️ Default device map
-        );
-    }
-
-
     public static Device createDeviceByType(String typeName, String id, String name, Clock clock, Map<String, Device> allDevices) {
         try {
             DeviceType type = DeviceType.fromString(typeName); // ✅ now uses your tested logic
@@ -95,7 +125,6 @@ public class DeviceFactory {
             throw new IllegalArgumentException("Invalid or unsupported device type: " + typeName);
         }
     }
-
 
     private static final Map<String, Device> devices = new HashMap<>();
 
