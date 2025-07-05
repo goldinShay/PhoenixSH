@@ -75,6 +75,10 @@ public abstract class Sensor implements Runnable {
     public List<Device> getSlaves() {
         return slaves;
     }
+    public void setSensorName(String name) {
+        this.sensorName = name;
+    }
+
 
     // ─── 🧪 Simulation & Test Tools ───
     public void testSensorBehavior() {

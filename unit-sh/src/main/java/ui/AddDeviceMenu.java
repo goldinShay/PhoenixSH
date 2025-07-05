@@ -14,9 +14,9 @@ import static ui.Menu.scanner;
 
 public class AddDeviceMenu {
 
-    static Clock clock = Clock.systemDefaultZone();
+    public static Clock clock = Clock.systemDefaultZone();
 
-    static void addDeviceMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
+    public static void addDeviceMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
         System.out.println("\n=== Add a Device ===");
 
         // ✅ Filter out GENERIC from menu

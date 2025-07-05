@@ -237,4 +237,10 @@ public abstract class Device implements Runnable {
     public String toString() {
         return String.format("%s | %s | %s | %s", getType(), getName(), getId(), getState());
     }
+    // Accessible to test classes in the same package
+    public static void clearDeviceRegistryForTests() {
+        REGISTERED_IDS.clear();
+    }
+
+
 }

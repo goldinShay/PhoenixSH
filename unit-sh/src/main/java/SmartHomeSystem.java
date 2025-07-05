@@ -5,83 +5,103 @@ import storage.DeviceStorage;
 import storage.SensorStorage;
 import storage.XlCreator;
 import ui.Menu;
+import ui.gui.MainWindow;
 import utils.AutoOpManager;
 import utils.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SmartHomeSystem {
+
+    private static Scheduler scheduler;
+
     public static void main(String[] args) {
+        boolean guiMode = args.length > 0 && args[0].equalsIgnoreCase("gui");
+
         System.out.println("📂 Initializing Smart Home System...");
 
-        File excelFile = XlCreator.getFilePath().toFile();
-
-        // 🛡️ Ensure the Excel file exists or offer to create a new one
-        if (!excelFile.exists()) {
-            System.out.printf("📄 Excel file not found: %s%n", excelFile.getAbsolutePath());
-            System.out.print("🆕 Create a new Excel file? (Y/N): ");
-
-            try {
-                char input = (char) System.in.read();
-                if (Character.toUpperCase(input) == 'Y') {
-                    if (XlCreator.createNewWorkbook()) {
-                        System.out.println("✨ New Excel file created successfully.");
-                    } else {
-                        System.out.println("❌ Failed to create Excel file. Exiting.");
-                        return;
-                    }
-                } else {
-                    System.out.println("🚫 Startup aborted by user.");
-                    return;
-                }
-            } catch (IOException e) {
-                System.out.println("⚠️ Error reading user input: " + e.getMessage());
-                return;
-            }
+        if (!ensureExcelFileExists(guiMode)) {
+            return; // Startup aborted or failed
         }
 
-        // 1️⃣ Load core memory from Excel
-        DeviceStorage.initialize();                     // Devices with correct AutoOp flags
-        SensorStorage.loadSensorsFromExcel();          // Sensors
-        XlCreator.loadSensorLinksFromExcel();          // Optional crosslinker
+        initializeSystem();
 
-        // 2️⃣ Restore automation links (Sensor ↔ Device memory references)
-        AutoOpManager.restoreMemoryLinks();            // Sets automationEnabled + links slaves
-        relinkSlavesToSensors();                       // Safe to associate sensors now
+        if (guiMode) {
+            launchGui();
+        } else {
+            launchCli();
+        }
+    }
 
-        // 3️⃣ Trigger threshold logic
-        AutoOpManager.reevaluateAllSensors();          // Notify slaves if needed
+    private static boolean ensureExcelFileExists(boolean guiMode) {
+        File excelFile = XlCreator.getFilePath().toFile();
 
-        // 4️⃣ Start scheduler
-        Scheduler scheduler = new Scheduler(
-                DeviceStorage.getDevices(),
-                SensorStorage.getSensors()
-        );
-        System.out.println("Stored devices before loading tasks: " + DeviceStorage.getDeviceList());
+        if (excelFile.exists()) return true;
+
+        System.out.printf("📄 Excel file not found: %s%n", excelFile.getAbsolutePath());
+
+        if (guiMode) {
+            System.err.println("🚫 No Excel file found. GUI mode requires one to continue.");
+            return false;
+        }
+
+        System.out.print("🆕 Create a new Excel file? (Y/N): ");
+        try {
+            char input = (char) System.in.read();
+            if (Character.toUpperCase(input) == 'Y') {
+                if (XlCreator.createNewWorkbook()) {
+                    System.out.println("✨ New Excel file created successfully.");
+                    return true;
+                } else {
+                    System.out.println("❌ Failed to create Excel file. Exiting.");
+                }
+            } else {
+                System.out.println("🚫 Startup aborted by user.");
+            }
+        } catch (IOException e) {
+            System.out.println("⚠️ Error reading user input: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    private static void initializeSystem() {
+        DeviceStorage.initialize();
+        SensorStorage.loadSensorsFromExcel();
+        XlCreator.loadSensorLinksFromExcel();
+        AutoOpManager.restoreMemoryLinks();
+        relinkSlavesToSensors();
+        AutoOpManager.reevaluateAllSensors();
+
+        scheduler = new Scheduler(DeviceStorage.getDevices(), SensorStorage.getSensors());
         scheduler.loadTasksFromExcel();
 
-        new java.util.Timer(true).schedule(new java.util.TimerTask() {
+        new Timer(true).schedule(new TimerTask() {
             @Override
             public void run() {
                 scheduler.startSchedulerLoop();
             }
-        }, 3000); // Delay for graceful boot
+        }, 3000);
+    }
 
-        // 🚀 System menu interaction
+    private static void launchGui() {
+        System.out.println("🖥️ Launching PhoenixSH GUI...");
+        MainWindow.launch();
+    }
+
+    private static void launchCli() {
         Menu.show(DeviceStorage.getDevices(), DeviceStorage.getDeviceThreads(), scheduler);
     }
 
-
-    // ✅ Clean slave re-link logic (now that automation flags are confirmed)
     private static void relinkSlavesToSensors() {
-        // 🧼 Clear all sensor slave links before relinking
         for (Sensor sensor : SensorStorage.getSensors().values()) {
             sensor.getSlaves().clear();
             System.out.printf("🧹 Cleared slave list for sensor '%s'%n", sensor.getSensorId());
         }
 
-        // 🔁 Rewire slave links based on active device mappings
         for (Device device : DeviceStorage.getDevices().values()) {
             if (!device.isAutomationEnabled()) continue;
 

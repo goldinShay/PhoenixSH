@@ -240,9 +240,6 @@ public class XlCreator {
         if (value == (int) value) cell.setCellValue((int) value);
         else cell.setCellValue(value);
     }
-
-
-
     public static boolean removeDevice(String deviceId) {
         return updateWorkbook((tasks, devices, sensors, senseControl) -> {
             int lastRow = devices.getLastRowNum();
@@ -565,9 +562,6 @@ public class XlCreator {
                 return cell.toString().trim(); // fallback for blanks, formulas, etc.
         }
     }
-
-
-
 
     public static boolean removeFromSenseControlSheet(String slaveId) {
         try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());

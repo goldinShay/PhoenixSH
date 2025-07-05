@@ -98,6 +98,8 @@ public class Scheduler {
         saveTasksToExcel();
     }
 
+
+
     // 🔹 Reschedules recurring tasks
     private void rescheduleTask(ScheduledTask task) {
         switch (task.getRepeat().toLowerCase()) {
@@ -182,7 +184,7 @@ public class Scheduler {
         }
     }
 
-
+//<----
 
     // 🔹 Loads tasks from Excel and correctly links them to registered devices
     public void loadTasksFromExcel() {
