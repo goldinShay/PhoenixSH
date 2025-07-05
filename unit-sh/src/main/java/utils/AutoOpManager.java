@@ -9,6 +9,7 @@ import sensors.Sensor;
 import storage.DeviceStorage;
 import storage.SensorStorage;
 import storage.XlCreator;
+import storage.xlc.XlWorkbookUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,7 +18,7 @@ public class AutoOpManager {
 
     // 📥 Load AutoOp links from Excel's Sense_Control sheet (on system startup)
     public static void loadMappingsFromExcel() {
-        try (FileInputStream fis = new FileInputStream(XlCreator.getFilePath().toFile());
+        try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet controlSheet = workbook.getSheet("Sense_Control");
@@ -82,7 +83,7 @@ public class AutoOpManager {
 
     // 🔗 Save a new AutoOp link to Excel
     public static boolean persistLink(Device slave, Sensor master) {
-        boolean written = XlCreator.appendToSenseControlSheet(slave, master);
+        boolean written = XlCreator.appendToSenseControl(slave, master);
         if (!written) {
             System.out.println("⚠️ Failed to persist AutoOp link between " + slave.getName() + " and " + master.getSensorName());
             return false;
@@ -93,7 +94,7 @@ public class AutoOpManager {
 
     // ❌ Remove a broken AutoOp link from Excel
     public static boolean unlink(Device slave) {
-        boolean removed = XlCreator.removeFromSenseControlSheet(slave.getId());
+        boolean removed = XlCreator.removeFromSenseControl(slave.getId());
         if (!removed) {
             System.out.println("⚠️ Could not remove AutoOp entry for " + slave.getId());
             return false;

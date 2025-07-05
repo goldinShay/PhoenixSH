@@ -4,6 +4,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import storage.DeviceStorage;
 import storage.XlCreator;
+import storage.xlc.XlWorkbookUtils;
 import utils.Log;
 import utils.NotificationService;
 
@@ -43,7 +44,8 @@ public class DeviceFactory {
                 double autoOffThreshold = 1050.0;
                 boolean autoEnabled = false;
 
-                try (FileInputStream fis = new FileInputStream(XlCreator.getFilePath().toFile());
+                try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath()
+                        .toFile());
                      Workbook workbook = new XSSFWorkbook(fis)) {
 
                     Sheet sheet = workbook.getSheet("Devices");
@@ -77,27 +79,65 @@ public class DeviceFactory {
             }
 
             case DRYER -> {
-                System.out.print("Enter the brand of the Dryer: ");
-                String brand = scanner.nextLine().trim();
-                System.out.print("Enter the model of the Dryer: ");
-                String model = scanner.nextLine().trim();
+                String brand = "Generic";
+                String model = "Default";
+
+                try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath().toFile());
+                     Workbook workbook = new XSSFWorkbook(fis)) {
+
+                    Sheet sheet = workbook.getSheet("Devices");
+                    if (sheet != null) {
+                        for (Row row : sheet) {
+                            if (row.getRowNum() == 0) continue;
+                            if (row.getCell(1).getStringCellValue().equalsIgnoreCase(id)) {
+                                brand = Optional.ofNullable(row.getCell(3)).map(Cell::getStringCellValue).orElse(brand);
+                                model = Optional.ofNullable(row.getCell(4)).map(Cell::getStringCellValue).orElse(model);
+                                break;
+                            }
+                        }
+                    }
+
+                } catch (IOException e) {
+                    Log.warn("⚠️ Could not load brand/model for Dryer " + id + ": " + e.getMessage());
+                }
+
                 return new Dryer(id, name, brand, model, clock);
             }
 
+
             case WASHING_MACHINE -> {
-                System.out.print("Enter the brand of the Washing Machine: ");
-                String brand = scanner.nextLine().trim();
-                System.out.print("Enter the model of the Washing Machine: ");
-                String model = scanner.nextLine().trim();
+                String brand = "Generic";
+                String model = "Default";
+
+                try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath().toFile());
+                     Workbook workbook = new XSSFWorkbook(fis)) {
+
+                    Sheet sheet = workbook.getSheet("Devices");
+                    if (sheet != null) {
+                        for (Row row : sheet) {
+                            if (row.getRowNum() == 0) continue;
+                            if (row.getCell(1).getStringCellValue().equalsIgnoreCase(id)) {
+                                brand = Optional.ofNullable(row.getCell(3)).map(Cell::getStringCellValue).orElse(brand);
+                                model = Optional.ofNullable(row.getCell(4)).map(Cell::getStringCellValue).orElse(model);
+                                break;
+                            }
+                        }
+                    }
+
+                } catch (IOException e) {
+                    Log.warn("⚠️ Could not load brand/model for WashingMachine " + id + ": " + e.getMessage());
+                }
+
                 return new WashingMachine(id, name, brand, model, clock);
             }
+
 
             case THERMOSTAT -> {
                 Set<String> allIds = new HashSet<>(DeviceStorage.getDevices().keySet());
                 String newId = XlCreator.getNextAvailableId("TH", allIds);
-                boolean savedState = getSavedState(newId);
+                boolean savedState = getSavedState(id);
                 NotificationService ns = new NotificationService();
-                return new Thermostat(newId, name, 25.0, ns, clock);
+                return new Thermostat(id, name, 25.0, ns, clock);
             }
 
             default -> throw new IllegalArgumentException("Unsupported device type: " + type);
