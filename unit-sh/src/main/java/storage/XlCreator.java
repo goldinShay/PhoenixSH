@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public class XlCreator {
 
@@ -15,6 +16,21 @@ public class XlCreator {
     private static final XlSensorManager sensorManager = new XlSensorManager();
     private static final XlSenseControlManager senseControlManager = new XlSenseControlManager();
     private static final XlTaskSchedulerManager schedulerManager = new XlTaskSchedulerManager();
+
+    // 🧪 Optional test stubs
+    private static Function<Device, Boolean> deviceUpdater = null;
+    private static Function<String, Boolean> deviceRemover = null;
+    private static Function<Sensor, Boolean> sensorUpdater = null;
+
+    public static void setDeviceUpdater(Function<Device, Boolean> f) { deviceUpdater = f; }
+    public static void setDeviceRemover(Function<String, Boolean> f) { deviceRemover = f; }
+    public static void setSensorUpdater(Function<Sensor, Boolean> f) { sensorUpdater = f; }
+
+    public static void resetHooks() {
+        deviceUpdater = null;
+        deviceRemover = null;
+        sensorUpdater = null;
+    }
 
     // ----- Device Delegates -----
 
@@ -27,11 +43,11 @@ public class XlCreator {
     }
 
     public static boolean updateDevice(Device device) {
-        return deviceManager.updateDevice(device);
+        return (deviceUpdater != null) ? deviceUpdater.apply(device) : deviceManager.updateDevice(device);
     }
 
     public static boolean removeDevice(String deviceId) {
-        return deviceManager.removeDevice(deviceId);
+        return (deviceRemover != null) ? deviceRemover.apply(deviceId) : deviceManager.removeDevice(deviceId);
     }
 
     public static String getNextAvailableId(String prefix, Set<String> existingIds) {
@@ -49,7 +65,7 @@ public class XlCreator {
     }
 
     public static boolean updateSensor(Sensor sensor) {
-        return sensorManager.updateSensor(sensor);
+        return (sensorUpdater != null) ? sensorUpdater.apply(sensor) : sensorManager.updateSensor(sensor);
     }
 
     public static boolean removeSensor(String sensorId) {
@@ -91,13 +107,12 @@ public class XlCreator {
     public static boolean deleteTask(String deviceId) {
         return schedulerManager.deleteTask(deviceId);
     }
+
     public static boolean removeSensorLink(String slaveId) {
         return XlSenseControlManager.removeSensorLink(slaveId);
     }
+
     public static boolean createNewWorkbook() {
-        // You'll likely want to call the utility or initializer method here
-        return XlWorkbookUtils.ensureFileExists(); // or whatever method does the actual creation
+        return XlWorkbookUtils.ensureFileExists();
     }
-
-
 }

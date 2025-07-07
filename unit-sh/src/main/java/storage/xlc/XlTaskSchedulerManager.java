@@ -14,14 +14,12 @@ import static storage.xlc.XlWorkbookUtils.isExcelFileHealthy;
 
 
 public class XlTaskSchedulerManager {
-
-    private static final Path FILE_PATH = getFilePath();
     private static final String SHEET_TASKS = "Scheduled Tasks";
 
     public static List<Map<String, String>> loadTasks() {
         List<Map<String, String>> tasks = new ArrayList<>();
 
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_TASKS);

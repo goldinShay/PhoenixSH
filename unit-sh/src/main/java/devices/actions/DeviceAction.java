@@ -1,4 +1,4 @@
-package devices;
+package devices.actions;
 
 public enum DeviceAction {
     ON, OFF,

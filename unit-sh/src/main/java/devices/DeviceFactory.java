@@ -145,14 +145,17 @@ public class DeviceFactory {
     }
 
     public static Device createDeviceByType(String typeName, String id, String name, Clock clock, Map<String, Device> allDevices) {
+        System.out.println("🔍 DeviceFactory - Processing Raw Type Input: '" + typeName + "'");
         try {
             DeviceType type = DeviceType.fromString(typeName);
-            System.out.println("🔍 DeviceFactory - Processing Type: '" + type + "'");
+            System.out.println("✅ Mapped to Enum Type: " + type);
             return createDevice(type, id, name, clock, allDevices);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid or unsupported device type: " + typeName);
+            e.printStackTrace();
+            throw new IllegalArgumentException("❌ Invalid or unsupported device type: " + typeName, e);
         }
     }
+
 
     public static boolean getSavedState(String deviceId) {
         Device device = devices.get(deviceId);

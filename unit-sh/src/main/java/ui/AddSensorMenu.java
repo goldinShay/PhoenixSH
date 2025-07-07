@@ -3,32 +3,33 @@ package ui;
 import sensors.Sensor;
 import sensors.SensorFactory;
 import sensors.SensorType;
+import sensors.MeasurementUnit;
 import storage.SensorStorage;
 import storage.XlCreator;
-import sensors.MeasurementUnit;
 
 import java.time.Clock;
-import java.util.*;
+import java.util.Scanner;
 
 import static ui.Menu.capitalize;
-import static ui.Menu.scanner;
 
 public class AddSensorMenu {
 
     private static final Clock clock = Clock.systemDefaultZone();
 
     public static void run(String name) {
+        Scanner scanner = new Scanner(System.in); // ✅ One scanner to rule them all
+
         System.out.println("\n=== Sensor Wizard ===");
 
         // 1️⃣ Select Sensor Type
-        SensorType sensorType = chooseSensorType();
+        SensorType sensorType = chooseSensorType(scanner);
         if (sensorType == null) {
             System.out.println("❌ Sensor creation cancelled.");
             return;
         }
 
         // 2️⃣ Choose Measurement Unit
-        MeasurementUnit unit = chooseMeasurementUnit();
+        MeasurementUnit unit = chooseMeasurementUnit(scanner);
         if (unit == MeasurementUnit.UNKNOWN) {
             System.out.println("❌ Invalid unit selection. Sensor creation cancelled.");
             return;
@@ -44,7 +45,7 @@ public class AddSensorMenu {
             return;
         }
 
-        // 4️⃣ Generate unique sensor ID (e.g., LIs003)
+        // 4️⃣ Generate unique sensor ID
         String sensorPrefix = sensorType.toString().substring(0, 2).toUpperCase() + "s";
         String id = generateNextSensorId(sensorPrefix);
         System.out.println("✅ Generated Sensor ID: " + id);
@@ -54,17 +55,15 @@ public class AddSensorMenu {
             Sensor sensor = SensorFactory.createSensor(sensorType, id, name, unit.getDisplay(), defaultValue, clock);
             SensorStorage.getSensors().put(id, sensor);
             XlCreator.writeSensorToExcel(sensor);
-
             System.out.printf("✅ Sensor '%s' (%s) created successfully!%n", name, id);
         } catch (Exception e) {
             System.out.println("❌ Failed to create sensor: " + e.getMessage());
         }
     }
 
-    private static SensorType chooseSensorType() {
+    private static SensorType chooseSensorType(Scanner scanner) {
         System.out.println("\nSelect Sensor Type:");
         SensorType[] types = SensorType.values();
-
         for (int i = 0; i < types.length; i++) {
             System.out.printf("%d - %s%n", i + 1, capitalize(types[i].toString()));
         }
@@ -79,9 +78,8 @@ public class AddSensorMenu {
         }
     }
 
-    private static MeasurementUnit chooseMeasurementUnit() {
+    private static MeasurementUnit chooseMeasurementUnit(Scanner scanner) {
         System.out.println("\nSelect Measurement Unit:");
-
         MeasurementUnit[] units = MeasurementUnit.values();
         for (int i = 0; i < units.length; i++) {
             System.out.printf("%d - %s%n", i + 1, units[i].getDisplay());

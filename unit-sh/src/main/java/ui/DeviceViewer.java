@@ -10,6 +10,17 @@ import java.util.Map;
 
 public class DeviceViewer {
 
+    // 🧪 Test hook for display override
+    private static Runnable displayHook = DeviceViewer::runDisplay;
+
+    public static void setDisplayHook(Runnable hook) {
+        displayHook = hook != null ? hook : DeviceViewer::runDisplay;
+    }
+
+    public static void resetDisplayHook() {
+        displayHook = DeviceViewer::runDisplay;
+    }
+
     public static Map<String, Object> getAllDevicesAndSensors() {
         Map<String, Object> combined = new LinkedHashMap<>();
 
@@ -21,7 +32,13 @@ public class DeviceViewer {
 
         return combined;
     }
+
     public static void displayAllDevicesAndSensors() {
+        displayHook.run(); // ✅ Redirect through test-safe hook
+    }
+
+    // 🔍 Real display logic kept private for encapsulation
+    private static void runDisplay() {
         Map<String, Object> allItems = getAllDevicesAndSensors();
 
         if (allItems.isEmpty()) {
@@ -34,7 +51,7 @@ public class DeviceViewer {
         System.out.println("-----------------------------------------------------");
 
         allItems.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey()) // 🔢 Sort by ID
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     String id = entry.getKey();
                     Object item = entry.getValue();
@@ -56,7 +73,5 @@ public class DeviceViewer {
 
                     System.out.printf("%-2s%-16s%-20s%-8s%-8s%n", "- ", type, name, id, state);
                 });
-
     }
-
 }

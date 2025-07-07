@@ -1,8 +1,10 @@
 package devicesTests;
 
 import devices.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import storage.DeviceStorage;
 
 import java.time.Clock;
 import java.util.Map;
@@ -60,5 +62,9 @@ public class DeviceFactoryTest {
         map.put("TEST123", new Light("TEST123", "RefTest", testClock, false, 1000.0, 1000.0));
 
         assertTrue(DeviceFactory.getDevices().containsKey("TEST123"));
+    }
+    @AfterEach
+    void resetAfterTest() {
+        DeviceStorage.clear();
     }
 }

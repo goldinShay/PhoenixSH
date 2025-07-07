@@ -10,11 +10,16 @@ import java.util.Scanner;
 
 public class XlWorkbookUtils {
 
-    private static final Path FILE_PATH = Paths.get("/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/shsXl.xlsx");
+    private static Path filePath = Paths.get("/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/shsXl.xlsx");
 
     public static Path getFilePath() {
-        return FILE_PATH;
+        return filePath;
     }
+
+    public static void overrideFilePath(Path newPath) {
+        filePath = newPath;
+    }
+
 
     public static String getCellValue(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
@@ -64,9 +69,10 @@ public class XlWorkbookUtils {
     }
 
     public static boolean ensureFileExists() {
-        File file = FILE_PATH.toFile();
+        File file = getFilePath().toFile();
+
         if (!file.exists()) {
-            System.out.println("⚠️ Excel file not found at: " + FILE_PATH);
+            System.out.println("⚠️ Excel file not found at: " + getFilePath());
             System.out.print("Do you want to create a new Excel file now? (Y/N): ");
 
             Scanner scanner = new Scanner(System.in);
@@ -74,19 +80,22 @@ public class XlWorkbookUtils {
 
             if (input.equalsIgnoreCase("Y")) {
                 try {
-                    // You’ll plug in XlCreator.createShsXlFile() here
+                    // TODO: Call your creation method here, e.g.:
+                    // return XlCreator.createShsXlFile();
                     return true;
                 } catch (Exception e) {
                     System.err.println("❌ Failed to create Excel file: " + e.getMessage());
                     return false;
                 }
             } else {
-                System.out.println("🛑 Aborting launch.");
+                System.out.println("🛑 Startup aborted by user.");
                 return false;
             }
         }
+
         return true;
     }
+
 
     public static Workbook getWorkbook(String path) throws IOException {
         File file = new File(path);
@@ -105,7 +114,7 @@ public class XlWorkbookUtils {
     public static boolean updateWorkbook(MultiSheetConsumer consumer) {
         if (!ensureFileExists()) return false;
 
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
 
             Sheet tasks = workbook.getSheet("Scheduled Tasks");
@@ -120,7 +129,7 @@ public class XlWorkbookUtils {
 
             consumer.accept(tasks, devices, sensors, senseControl);
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
             }
 

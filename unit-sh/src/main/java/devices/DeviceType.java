@@ -4,6 +4,7 @@ public enum DeviceType {
 
     GENERIC,
     LIGHT,
+    SMART_LIGHT,
     THERMOSTAT,
     WASHING_MACHINE,
     DRYER,

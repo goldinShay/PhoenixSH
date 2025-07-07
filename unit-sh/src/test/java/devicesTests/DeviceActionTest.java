@@ -1,6 +1,6 @@
 package devicesTests;
 
-import devices.DeviceAction;
+import devices.actions.DeviceAction;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -6,8 +6,6 @@ import sensors.*;
 import utils.Log;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.*;
 
@@ -15,14 +13,14 @@ import static storage.xlc.XlWorkbookUtils.*;
 
 public class XlSensorManager {
 
-    private static final Path FILE_PATH = getFilePath();
     private static final Clock clock = Clock.systemDefaultZone();
     private static final String SHEET_SENSORS = "Sensors";
 
+    // 🔍 Load sensors from the current Excel file path
     public static Map<String, Sensor> loadSensors() {
         Map<String, Sensor> loadedSensors = new HashMap<>();
 
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSORS);
@@ -57,9 +55,10 @@ public class XlSensorManager {
         return loadedSensors;
     }
 
+    // ✍️ Write a new sensor row to Excel
     public static boolean writeSensorToExcel(Sensor sensor) {
         try {
-            Workbook workbook = getWorkbook(FILE_PATH.toString());
+            Workbook workbook = getWorkbook(getFilePath().toString());
             Sheet sheet = workbook.getSheet(SHEET_SENSORS);
 
             if (sheet == null) {
@@ -76,11 +75,11 @@ public class XlSensorManager {
             row.createCell(3).setCellValue(sensor.getUnit());
             row.createCell(4).setCellValue(sensor.getCurrentValue());
             row.createCell(5).setCellValue("");
-            row.createCell(6).setCellValue(sensor.getCreatedTimestamp().toString());
+            row.createCell(6).setCellValue(sensor.getCreatedTimestamp());
             row.createCell(7).setCellValue("");
             row.createCell(8).setCellValue("");
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
                 workbook.close();
             }
@@ -93,8 +92,9 @@ public class XlSensorManager {
         }
     }
 
+    // 🔄 Update sensor details by ID
     public static boolean updateSensor(Sensor sensor) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSORS);
@@ -114,7 +114,7 @@ public class XlSensorManager {
                 }
             }
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
             }
 
@@ -126,14 +126,17 @@ public class XlSensorManager {
         }
     }
 
+    // 🗑️ Remove a sensor by ID
     public static boolean removeSensor(String sensorId) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSORS);
             if (sheet == null) return false;
 
-            for (Row row : sheet) {
+            Iterator<Row> iterator = sheet.iterator();
+            while (iterator.hasNext()) {
+                Row row = iterator.next();
                 if (row.getRowNum() == 0) continue;
                 if (getCellValue(row, 1).equalsIgnoreCase(sensorId)) {
                     sheet.removeRow(row);
@@ -141,7 +144,7 @@ public class XlSensorManager {
                 }
             }
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
             }
 
@@ -153,16 +156,15 @@ public class XlSensorManager {
         }
     }
 
+    // 🧾 Add headers if sheet is created manually
     private static void createSensorHeaderRow(Sheet sheet) {
+        String[] headers = {
+                "SENSOR_TYPE", "SENSOR_ID", "NAME", "UNITS",
+                "DEFAULT_VAL", "ACTIONS", "ADDED_TS", "UPDATED_TS", "REMOVED_TS"
+        };
         Row header = sheet.createRow(0);
-        header.createCell(0).setCellValue("SENSOR_TYPE");
-        header.createCell(1).setCellValue("SENSOR_ID");
-        header.createCell(2).setCellValue("NAME");
-        header.createCell(3).setCellValue("UNITS");
-        header.createCell(4).setCellValue("DEFAULT_VAL");
-        header.createCell(5).setCellValue("ACTIONS");
-        header.createCell(6).setCellValue("ADDED_TS");
-        header.createCell(7).setCellValue("UPDATED_TS");
-        header.createCell(8).setCellValue("REMOVED_TS");
+        for (int i = 0; i < headers.length; i++) {
+            header.createCell(i).setCellValue(headers[i]);
+        }
     }
 }

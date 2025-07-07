@@ -1,6 +1,5 @@
 package ui;
 
-
 import devices.Device;
 import sensors.Sensor;
 import storage.DeviceStorage;
@@ -9,11 +8,11 @@ import storage.XlCreator;
 
 import java.util.List;
 import java.util.Map;
-
-import static ui.Menu.scanner;
+import java.util.Scanner;
 
 public class DeviceMenu {
     public static void DevicesMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
+        Scanner scanner = new Scanner(System.in); // 🔄 NEW: fresh scanner tied to the current System.in
         boolean back = false;
 
         while (!back) {
@@ -35,7 +34,6 @@ public class DeviceMenu {
                     System.out.print("Enter ID of the device or sensor to update: ");
                     String updateId = scanner.nextLine().trim();
 
-                    // 🔍 Try device
                     if (DeviceStorage.getDevices().containsKey(updateId)) {
                         Device device = DeviceStorage.getDevices().get(updateId);
 
@@ -51,7 +49,6 @@ public class DeviceMenu {
                         System.out.print("Enter new Auto-ON threshold (current: " + device.getAutoOnThreshold() + ") or leave blank to keep: ");
                         String newOnStr = scanner.nextLine().trim();
 
-                        // 🧼 Apply updates
                         device.setName(!newName.isEmpty() ? newName : device.getName());
                         device.setBrand(!newBrand.isEmpty() ? newBrand : device.getBrand());
                         device.setModel(!newModel.isEmpty() ? newModel : device.getModel());
@@ -62,11 +59,11 @@ public class DeviceMenu {
                             if (!newOnStr.isEmpty()) {
                                 if (newOnStr.equalsIgnoreCase("reset") || newOnStr.equalsIgnoreCase("r")) {
                                     device.resetAutoOnThreshold();
-                                    device.resetAutoOffThreshold(); // Mirror reset
+                                    device.resetAutoOffThreshold();
                                 } else {
                                     double newVal = Double.parseDouble(newOnStr);
                                     device.setAutoOnThreshold(newVal, true);
-                                    device.setAutoOffThreshold(newVal); // Mirror ON → OFF
+                                    device.setAutoOffThreshold(newVal);
                                 }
                                 thresholdChanged = true;
                             }
@@ -82,18 +79,14 @@ public class DeviceMenu {
                             boolean synced = XlCreator.updateAutoOpThresholds(
                                     device.getId(),
                                     device.getAutoOnThreshold(),
-                                    device.getAutoOnThreshold() // Mirror into Excel AUTO-OFF
+                                    device.getAutoOnThreshold()
                             );
-                            if (synced) {
-                                System.out.println("🔄 Sense_Control threshold synced (AUTO-OFF mirrored).");
-                            } else {
-                                System.out.println("⚠️ Failed to sync threshold to Sense_Control.");
-                            }
+                            System.out.println(synced
+                                    ? "🔄 Sense_Control threshold synced (AUTO-OFF mirrored)."
+                                    : "⚠️ Failed to sync threshold to Sense_Control.");
                         }
-                    }
 
-                    // 🔍 Try sensor
-                    else if (SensorStorage.getSensors().containsKey(updateId)) {
+                    } else if (SensorStorage.getSensors().containsKey(updateId)) {
                         Sensor sensor = SensorStorage.getSensors().get(updateId);
 
                         System.out.print("Enter new name (current: " + sensor.getSensorName() + "): ");
@@ -119,27 +112,24 @@ public class DeviceMenu {
                         sensor.updateTimestamp();
                         boolean updated = XlCreator.updateSensor(sensor);
                         System.out.println(updated ? "✅ Sensor updated." : "❌ Sensor update failed.");
-                    }
 
-                    // ❌ ID not found
-                    else {
+                    } else {
                         System.out.println("❌ ID not found.");
                     }
                 }
-
-
 
                 case "4" -> {
                     DeviceViewer.displayAllDevicesAndSensors();
                     System.out.print("Enter ID of the device or sensor to remove: ");
                     String removeId = scanner.nextLine().trim();
 
-                    boolean removed =
-                            DeviceStorage.getDevices().containsKey(removeId)
-                                    ? XlCreator.removeDevice(removeId)
-                                    : XlCreator.removeSensor(removeId);
+                    boolean removed = DeviceStorage.getDevices().containsKey(removeId)
+                            ? XlCreator.removeDevice(removeId)
+                            : XlCreator.removeSensor(removeId);
 
-                    System.out.println(removed ? "🗑️ Removed successfully." : "❌ Could not remove. ID not found.");
+                    System.out.println(removed
+                            ? "🗑️ Removed successfully."
+                            : "❌ Could not remove. ID not found.");
                 }
 
                 case "5" -> back = true;
@@ -147,5 +137,4 @@ public class DeviceMenu {
             }
         }
     }
-
 }

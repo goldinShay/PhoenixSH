@@ -1,5 +1,6 @@
 package devices;
 
+import devices.actions.DeviceAction;
 import sensors.Sensor;
 import storage.DeviceStorage;
 import utils.DeviceDefaults;
@@ -241,6 +242,7 @@ public abstract class Device implements Runnable {
     public static void clearDeviceRegistryForTests() {
         REGISTERED_IDS.clear();
     }
+
 
 
 }

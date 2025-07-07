@@ -33,36 +33,42 @@ class AddDeviceMenuTest {
     void tearDown() {
         System.setOut(originalOut);
         System.setIn(originalIn);
+        DeviceStorage.clear(); // 🧼 Make sure storage is reset for other tests too
     }
 
     @Test
     void addDeviceMenu_shouldAddDevice_whenValidInputProvided() {
-        // ✅ Simulate choosing first device type and giving a valid name
+        // 🧪 Simulate choosing first device type and giving a valid name
         String simulatedInput = "1\nMyLight\n";
         System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
 
-        // Stub DeviceFactory to create a fake device without full logic
-        DeviceStorage.getDevices().clear(); // reset global state
+        // Reset global state and override factory to inject a dynamic test device
+        DeviceStorage.clear();
 
-        // Inject a fake device
-        Device fakeDevice = new FakeDevice("4 errors to this class:LGHT001", "MyLight", DeviceType.LIGHT);
-        DeviceFactory.setDeviceCreator((id, name, clock, map) -> fakeDevice);
+        DeviceFactory.setDeviceCreator((id, name, clock, map) ->
+                new FakeDevice(id, name, DeviceType.LIGHT)
+        );
 
-
-        AddDeviceMenu.clock = Clock.systemUTC(); // safe clock
+        AddDeviceMenu.clock = Clock.systemUTC(); // Safe deterministic clock
         AddDeviceMenu.addDeviceMenu(testDevices, testDeviceThreads);
 
-        assertTrue(testDevices.containsKey("LGHT001"), "Device map should contain the new device");
-        assertEquals("MyLight", testDevices.get("LGHT001").getName());
-        assertTrue(outContent.toString().contains("✅ MyLight (LGHT001) added successfully"));
+        // ✅ Assert that a device was added with expected properties
+        assertEquals(1, testDevices.size(), "Device should be added");
+
+        String addedId = testDevices.keySet().iterator().next();
+        Device added = testDevices.get(addedId);
+
+        assertNotNull(added);
+        assertEquals("MyLight", added.getName());
+        assertEquals(DeviceType.LIGHT, added.getType());
+        assertTrue(outContent.toString().contains("✅ MyLight (" + addedId + ") added successfully"));
     }
 
-    // ✅ Simple stub for safe test
+    // 🧪 Minimal stub device for safe test injection
     static class FakeDevice extends Device implements Runnable {
         public FakeDevice(String id, String name, DeviceType type) {
-            super(id, name, type, Clock.systemUTC(), 400.0, 600.0); // 👈 Added thresholds
+            super(id, name, type, Clock.systemUTC(), 400.0, 600.0);
         }
-
 
         @Override public void run() {}
         @Override public List<String> getAvailableActions() { return List.of("on", "off"); }

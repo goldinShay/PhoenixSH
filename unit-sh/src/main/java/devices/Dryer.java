@@ -1,5 +1,7 @@
 package devices;
 
+import devices.actions.DeviceAction;
+import devices.actions.DryerAction;
 import storage.DeviceStorage;
 import utils.DeviceDefaults;
 
@@ -125,4 +127,24 @@ public class Dryer extends Device {
                 getName(), getId(), brand, model,
                 isOn() ? "ON" : "OFF", running ? "YES" : "NO");
     }
+    private DryerAction mode;
+
+    public void setMode(String modeLabel) {
+        if (!"BDR14025".equalsIgnoreCase(model)) {
+            System.out.println("⚠️ Advanced modes not available for this model.");
+            return;
+        }
+
+        try {
+            this.mode = DryerAction.fromLabel(modeLabel);
+            System.out.println("🔧 Mode set to: " + this.mode);
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ Invalid mode: " + modeLabel);
+        }
+    }
+    public DryerAction getMode() {
+        return mode;
+    }
+
+
 }

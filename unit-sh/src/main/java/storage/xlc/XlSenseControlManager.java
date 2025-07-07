@@ -7,18 +7,15 @@ import sensors.*;
 import utils.Log;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.*;
-
 import static storage.xlc.XlWorkbookUtils.*;
 
 public class XlSenseControlManager {
 
-    private static final Path FILE_PATH = getFilePath();
     private static final String SHEET_SENSE = "Sense_Control";
 
     public static boolean appendToSenseControlSheet(Device slave, Sensor master) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSE);
@@ -38,7 +35,7 @@ public class XlSenseControlManager {
             row.createCell(4).setCellValue(slave.getAutoOnThreshold());
             row.createCell(5).setCellValue(slave.getAutoOffThreshold());
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
             }
 
@@ -64,7 +61,7 @@ public class XlSenseControlManager {
     }
 
     public static void loadSensorLinksFromExcel(Map<String, Device> devices, Map<String, Sensor> sensors) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSE);
@@ -92,7 +89,7 @@ public class XlSenseControlManager {
     }
 
     public static boolean updateAutoOpThresholds(String deviceId, double newOn, double ignoredOff) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
+        try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheet(SHEET_SENSE);
@@ -107,7 +104,7 @@ public class XlSenseControlManager {
                 }
             }
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH.toFile())) {
+            try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
             }
 
@@ -119,17 +116,8 @@ public class XlSenseControlManager {
         }
     }
 
-    private static void removeRowIfExists(Sheet sheet, String slaveId) {
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row != null && getCellValue(row, 1).equalsIgnoreCase(slaveId)) {
-                sheet.removeRow(row);
-                break;
-            }
-        }
-    }
     public static boolean removeSensorLink(String slaveId) {
-        File file = new File(getFilePath().toString());
+        File file = getFilePath().toFile();
 
         if (!file.exists()) {
             System.err.println("❌ Excel file not found.");
@@ -142,7 +130,7 @@ public class XlSenseControlManager {
         }
 
         try (Workbook workbook = WorkbookFactory.create(file)) {
-            Sheet sheet = workbook.getSheet("Sense_Control");
+            Sheet sheet = workbook.getSheet(SHEET_SENSE);
             if (sheet == null) {
                 System.err.println("⚠️ Sense_Control sheet missing.");
                 return false;
@@ -194,5 +182,15 @@ public class XlSenseControlManager {
         }
 
         return false;
+    }
+
+    private static void removeRowIfExists(Sheet sheet, String slaveId) {
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row != null && getCellValue(row, 1).equalsIgnoreCase(slaveId)) {
+                sheet.removeRow(row);
+                break;
+            }
+        }
     }
 }

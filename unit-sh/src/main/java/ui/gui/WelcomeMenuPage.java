@@ -11,48 +11,56 @@ public class WelcomeMenuPage extends JPanel {
         setBackground(Color.DARK_GRAY);
 
         // Top simulated LCD
-        JPanel lcdPanel = new JPanel(new GridLayout(4, 1));
+        JPanel lcdPanel = new JPanel(new GridLayout(3, 1));
         lcdPanel.setBackground(Color.BLACK);
         lcdPanel.setPreferredSize(new Dimension(800, 120));
 
-        lcdPanel.add(buildLCDRow("Main Menu", JLabel.CENTER, Color.GREEN));
         lcdPanel.add(buildLCDRow("Welcome to:", JLabel.CENTER, Color.LIGHT_GRAY));
         lcdPanel.add(buildLCDRow("PhoenixSH", JLabel.CENTER, Color.WHITE));
         lcdPanel.add(buildLCDRow("V - 1.0", JLabel.CENTER, Color.GRAY));
 
         // Center buttons
-        // Center buttons (horizontal row with square size)
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.X_AXIS));
         centerPanel.setBackground(Color.DARK_GRAY);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(60, 80, 60, 80));
 
-// Create uniformly sized square buttons
-        Dimension squareSize = new Dimension(120, 120);
+        Dimension squareSize = new Dimension(180, 180);
 
-        JButton b1 = createMainButton("Device Settings");
-        JButton b2 = createMainButton("Device Control");
+        JButton b1 = createMainButton("<html><center>Device<br>Settings</center></html>");
+        JButton b2 = createMainButton("<html><center>Device<br>Control</center></html>");
         JButton b3 = createMainButton("Scheduler");
 
-        b1.setPreferredSize(squareSize);
-        b2.setPreferredSize(squareSize);
-        b3.setPreferredSize(squareSize);
+        for (JButton btn : java.util.List.of(b1, b2, b3)) {
+            btn.setPreferredSize(squareSize);
+            btn.setMinimumSize(squareSize);
+            btn.setMaximumSize(squareSize);
+            btn.setHorizontalAlignment(SwingConstants.CENTER);
+            btn.setVerticalAlignment(SwingConstants.CENTER);
+        }
 
-// Padding between buttons
+        // 💡 Hook b1 to DeviceSettingsPage
+        b1.addActionListener(e -> {
+            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            topFrame.setContentPane(new DeviceSettingsPage());
+            topFrame.revalidate();
+            topFrame.repaint();
+        });
+
         centerPanel.add(Box.createHorizontalGlue());
         centerPanel.add(b1);
-        centerPanel.add(Box.createRigidArea(new Dimension(20, 0)));
+        centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
         centerPanel.add(b2);
-        centerPanel.add(Box.createRigidArea(new Dimension(20, 0)));
+        centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
         centerPanel.add(b3);
         centerPanel.add(Box.createHorizontalGlue());
 
-        // Footer panel
+        // Footer
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.BLACK);
         footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
 
-        JLabel pageLabel = new JLabel("Page: 050");
+        JLabel pageLabel = new JLabel(String.format("Page: %03d - Welcome Menu", PAGE_NUMBER));
         pageLabel.setForeground(Color.GREEN);
 
         JButton settingsBtn = new JButton("⚙️ Settings");
@@ -61,7 +69,7 @@ public class WelcomeMenuPage extends JPanel {
         footer.add(pageLabel, BorderLayout.WEST);
         footer.add(settingsBtn, BorderLayout.EAST);
 
-        // Add everything
+        // Layout
         add(lcdPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);

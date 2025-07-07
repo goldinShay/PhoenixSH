@@ -1,36 +1,48 @@
 package storage;
 
 import devices.Device;
-import devices.DeviceAction;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import devices.actions.DeviceAction;
 
-import java.io.*;
 import java.util.*;
 
 public class DeviceStorage {
 
+    // 🔧 Static storage for all devices
     private static final Map<String, Device> devices = new HashMap<>();
+
+    // 🔧 Track active threads (if any)
     private static final List<Thread> deviceThreads = new ArrayList<>();
 
-    // Initialize storage by loading devices from Excel
+    // 🧪 Clear in-memory state for clean test execution
+    public static void clear() {
+        devices.clear();
+        deviceThreads.clear();
+    }
+
+    // 🔄 Initialize by loading from Excel (usually called on startup)
     public static void initialize() {
         devices.clear();
         List<Device> loadedDevices = XlCreator.loadDevicesFromExcel();
         loadedDevices.forEach(device -> devices.put(device.getId(), device));
     }
 
-    // Get all stored devices with real-time synchronization
+    // 🚪 Expose all devices, auto-synced before returning
     public static Map<String, Device> getDevices() {
         refreshDevices();
         return devices;
     }
 
+    // 📄 Alternate form: get devices as a list
     public static List<Device> getDeviceList() {
         return new ArrayList<>(getDevices().values());
     }
 
-    // Ensure device state updates correctly across memory & persistence
+    // 🔄 Used for memory vs persistence sanity checks (currently a no-op but might evolve)
+    public static void refreshDevices() {
+        devices.replaceAll((id, latestInstance) -> latestInstance);
+    }
+
+    // ⚡ Turn a device on/off + update Excel
     public static void updateDeviceState(String deviceId, String action) {
         Device device = devices.get(deviceId);
         if (device != null) {
@@ -53,12 +65,7 @@ public class DeviceStorage {
         }
     }
 
-
-    // Ensures memory and persistence align correctly
-    public static void refreshDevices() {
-        devices.replaceAll((id, latestInstance) -> latestInstance);
-    }
-
+    // 🧵 Thread tracking access
     public static List<Thread> getDeviceThreads() {
         return deviceThreads;
     }

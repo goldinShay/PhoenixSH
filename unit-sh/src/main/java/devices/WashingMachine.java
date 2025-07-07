@@ -1,5 +1,7 @@
 package devices;
 
+import devices.actions.DeviceAction;
+import devices.actions.WashingMachineAction;
 import storage.DeviceStorage;
 import utils.DeviceDefaults;
 
@@ -12,6 +14,8 @@ public class WashingMachine extends Device {
     private String brand;
     private String model;
     private boolean running = false;
+    private String currentMode = "Standard";
+
 
     // ─── 🏗 Constructors ───
 
@@ -128,4 +132,37 @@ public class WashingMachine extends Device {
                 getName(), getId(), brand, model,
                 isOn() ? "ON" : "OFF", running ? "YES" : "NO");
     }
+    public void setMode(WashingMachineAction mode) {
+        if (mode == null) {
+            System.out.println("❌ Cannot set mode: null provided.");
+            return;
+        }
+
+        // Optional: prevent mode changes if machine is OFF
+        if (!isOn()) {
+            System.out.println("⚠️ Please turn on the washing machine before selecting a program.");
+            return;
+        }
+
+        this.currentMode = mode.getLabel();
+        System.out.printf("✅ Mode set to '%s' (%d°C, %d rpm)%n",
+                mode.getLabel(), mode.getWaterTemp(), mode.getSpinSpeed());
+    }
+    @Override
+    public void turnOff() {
+        super.setOn(false);
+        System.out.println("🔌 Washing Machine " + getName() + " turned OFF.");
+
+        if (isRunning()) {
+            stop(); // Gracefully end the running program
+            System.out.println("🛑 Wash cycle interrupted due to power OFF.");
+        }
+
+        if (currentMode != null && !currentMode.equals("Standard")) {
+            currentMode = "Standard"; // Resets to default
+            System.out.println("📴 Program reset to 'Standard'.");
+        }
+    }
+
+
 }

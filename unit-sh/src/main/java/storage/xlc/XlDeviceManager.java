@@ -24,6 +24,8 @@ public class XlDeviceManager {
     public static List<Device> loadDevicesFromExcel() {
         List<Device> devices = new ArrayList<>();
 
+        Log.debug("📁 Loading devices from Excel file: " + FILE_PATH); // 🔍 Active file path debug
+
         try (FileInputStream fis = new FileInputStream(FILE_PATH.toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
 
@@ -46,10 +48,15 @@ public class XlDeviceManager {
                     double autoOn = row.getCell(6).getNumericCellValue();
                     double autoOff = row.getCell(7).getNumericCellValue();
 
-                    Map<String, Device> deviceMap = DeviceStorage.getDevices(); // Or whatever holds your devices
+                    Log.debug("🔍 Parsing row → TYPE: [" + type + "], ID: [" + id + "], NAME: [" + name + "]");
+
+                    Map<String, Device> deviceMap = DeviceStorage.getDevices();
                     Device device = DeviceFactory.createDeviceByType(type, id, name, clock, deviceMap);
 
-                    if (device == null) continue;
+                    if (device == null) {
+                        Log.warn("⚠️ Device creation failed for type: [" + type + "], ID: [" + id + "]");
+                        continue;
+                    }
 
                     device.setBrand(brand);
                     device.setModel(model);
@@ -66,8 +73,11 @@ public class XlDeviceManager {
             Log.error("🛑 Failed to read devices from Excel: " + e.getMessage());
         }
 
+        Log.info("📦 Finished loading devices. Count: " + devices.size());
         return devices;
     }
+
+
 
     public static void writeDeviceToExcel(Device device) throws IOException {
         updateWorkbook((tasks, devices, sensors, senseControl) -> {
