@@ -145,6 +145,23 @@ public class Dryer extends Device {
     public DryerAction getMode() {
         return mode;
     }
+    @Override
+    public void turnOn() {
+        super.setOn(true);
+        System.out.println("🔌 Dryer " + getName() + " turned ON.");
+    }
+
+    @Override
+    public void turnOff() {
+        super.setOn(false);
+        System.out.println("🔌 Dryer " + getName() + " turned OFF.");
+        if (isRunning()) {
+            stop(); // Interrupt running cycle gracefully
+            System.out.println("🛑 Dry cycle interrupted due to power OFF.");
+        }
+        mode = null; // Optional: reset mode if powered off
+    }
+
 
 
 }

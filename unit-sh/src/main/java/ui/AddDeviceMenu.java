@@ -65,11 +65,19 @@ public class AddDeviceMenu {
 
             // ✅ Proceed with standard device creation
             Set<String> existingIds = new HashSet<>(DeviceStorage.getDevices().keySet());
-            String id = XlCreator.getNextAvailableId(selectedType.toString().substring(0, 2), existingIds);
+            String id = utils.DeviceIdManager.getInstance().generateIdForType(selectedType);
 
             Device newDevice = DeviceFactory.createDevice(
                     selectedType, id, name, clock, DeviceFactory.getDevices()
             );
+            System.out.print("Enter brand: ");
+            String brand = scanner.nextLine().trim();
+
+            System.out.print("Enter model: ");
+            String model = scanner.nextLine().trim();
+
+            newDevice.setBrand(brand);
+            newDevice.setModel(model);
 
             devices.put(id, newDevice);
             Thread thread = new Thread(newDevice);

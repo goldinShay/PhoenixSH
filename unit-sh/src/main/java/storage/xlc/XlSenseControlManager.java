@@ -49,7 +49,7 @@ public class XlSenseControlManager {
     }
 
     public static boolean removeFromSenseControlSheet(String slaveId) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             for (Row row : senseControl) {
                 if (row.getRowNum() == 0) continue;
                 if (getCellValue(row, 1).equalsIgnoreCase(slaveId)) {
@@ -58,6 +58,7 @@ public class XlSenseControlManager {
                 }
             }
         });
+
     }
 
     public static void loadSensorLinksFromExcel(Map<String, Device> devices, Map<String, Sensor> sensors) {

@@ -1,6 +1,7 @@
 package storage.xlc;
 
 import devices.*;
+import devices.actions.SmartLightAction;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import storage.DeviceStorage;
@@ -16,6 +17,24 @@ import java.util.*;
 import static storage.xlc.XlWorkbookUtils.*;
 
 public class XlDeviceManager {
+    // 🧭 Excel Column Indexes (Devices Sheet)
+    private static final int COL_TYPE = 0;
+    private static final int COL_ID = 1;
+    private static final int COL_NAME = 2;
+    private static final int COL_BRAND = 3;
+    private static final int COL_MODEL = 4;
+    private static final int COL_AUTO_ENABLED = 5;
+    private static final int COL_AUTO_ON = 6;
+    private static final int COL_AUTO_OFF = 7;
+    private static final int COL_ACTIONS = 8;
+    private static final int COL_ADDED_TS = 9;
+    private static final int COL_UPDATED_TS = 10;
+    private static final int COL_REMOVED_TS = 11;
+    private static final int COL_RED = 12;
+    private static final int COL_GREEN = 13;
+    private static final int COL_BLUE = 14;
+    private static final int COL_MODE_LABEL = 15;
+
 
     private static final Path FILE_PATH = XlWorkbookUtils.getFilePath();
     private static final Clock clock = ClockUtil.getClock();
@@ -80,7 +99,7 @@ public class XlDeviceManager {
 
 
     public static void writeDeviceToExcel(Device device) throws IOException {
-        updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             int rowNum = getFirstAvailableRow(devices);
             if (rowNum == -1) throw new IOException("Excel row limit reached");
             writeDeviceRow(device, devices.createRow(rowNum));
@@ -88,29 +107,47 @@ public class XlDeviceManager {
     }
 
     public static boolean updateDevice(Device device) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             for (Row row : devices) {
                 if (row.getRowNum() == 0) continue;
 
-                String deviceId = getCellValue(row, 1);
-                if (device.getId().equalsIgnoreCase(deviceId)) {
-                    setCell(row, 2, device.getName());
-                    setCell(row, 3, device.getBrand());
-                    setCell(row, 4, device.getModel());
-                    setCell(row, 5, device.isAutomationEnabled());
-                    setCell(row, 6, device.getAutoOnThreshold());
-                    setCell(row, 7, device.getAutoOffThreshold());
-                    setCell(row, 8, String.join(", ", device.getAvailableActions()));
-                    setCell(row, 10, ZonedDateTime.now().toString());
+                String rowId = getCellValue(row, COL_ID);
+                if (device.getId().equalsIgnoreCase(rowId)) {
+                    setCell(row, COL_NAME, device.getName());
+                    setCell(row, COL_BRAND, device.getBrand());
+                    setCell(row, COL_MODEL, device.getModel());
+                    setCell(row, COL_AUTO_ENABLED, device.isAutomationEnabled());
+                    setCell(row, COL_AUTO_ON, device.getAutoOnThreshold());
+                    setCell(row, COL_AUTO_OFF, device.getAutoOffThreshold());
+                    setCell(row, COL_ACTIONS, String.join(", ", device.getAvailableActions()));
+                    setCell(row, COL_UPDATED_TS, ZonedDateTime.now().toString());
+
+                    if (device instanceof SmartLight smart) {
+                        SmartLightAction mode = smart.getLightMode();
+                        if (mode != null) {
+                            setCell(row, COL_RED, mode.getRed());
+                            setCell(row, COL_GREEN, mode.getGreen());
+                            setCell(row, COL_BLUE, mode.getBlue());
+                            setCell(row, COL_MODE_LABEL, mode.toString());
+                        } else {
+                            setCell(row, COL_RED, 0);
+                            setCell(row, COL_GREEN, 0);
+                            setCell(row, COL_BLUE, 0);
+                            setCell(row, COL_MODE_LABEL, "None");
+                        }
+                    }
+
+                    Log.info("✅ Device updated: " + device.getId());
                     return;
                 }
             }
-            throw new IOException("Device not found: " + device.getId());
+            throw new IOException("Device not found in Excel: " + device.getId());
         });
     }
 
+
     public static boolean removeDevice(String deviceId) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             int lastRow = devices.getLastRowNum();
             for (int i = 1; i <= lastRow; i++) {
                 Row row = devices.getRow(i);
@@ -122,6 +159,7 @@ public class XlDeviceManager {
             }
             throw new IOException("Device not found: " + deviceId);
         });
+
     }
 
     public static String getNextAvailableId(String prefix, Set<String> existingIds) {
@@ -147,7 +185,24 @@ public class XlDeviceManager {
         row.createCell(9).setCellValue(device.getAddedTimestamp());
         row.createCell(10).setCellValue(device.getUpdatedTimestamp());
         row.createCell(11).setCellValue(device.getRemovedTimestamp());
+
+        // 🆕 RGB support (for SmartLight only)
+        if (device instanceof SmartLight smart) {
+            SmartLightAction mode = smart.getLightMode();
+            if (mode != null) {
+                row.createCell(12).setCellValue(mode.getRed());
+                row.createCell(13).setCellValue(mode.getGreen());
+                row.createCell(14).setCellValue(mode.getBlue());
+                row.createCell(15).setCellValue(mode.toString()); // or any label method you add later
+            } else {
+                row.createCell(12).setCellValue(0);
+                row.createCell(13).setCellValue(0);
+                row.createCell(14).setCellValue(0);
+                row.createCell(15).setCellValue("None");
+            }
+        }
     }
+
 
     private static boolean parseBoolean(Cell cell) {
         return switch (cell.getCellType()) {

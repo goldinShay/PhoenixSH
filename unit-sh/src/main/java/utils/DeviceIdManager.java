@@ -18,16 +18,17 @@ public class DeviceIdManager {
         return instance;
     }
 
-    // ✅ Set this ONCE after loading devices from Excel
+    // ✅ Load known device IDs (typically from Excel at startup)
     public synchronized void setExistingDevices(List<Device> existingDevices) {
         assignedIds.clear();
         if (existingDevices != null) {
-            existingDevices.forEach(device -> assignedIds.add(device.getId())); // Persist IDs properly
+            existingDevices.forEach(device -> assignedIds.add(device.getId()));
         }
     }
 
+    // ✅ Main generator method (custom handling for SMART_LIGHT)
     public synchronized String generateId(String deviceType) {
-        String prefix = deviceType.substring(0, Math.min(2, deviceType.length())).toUpperCase();
+        String prefix = resolvePrefix(deviceType);
 
         int max = assignedIds.stream()
                 .filter(id -> id.startsWith(prefix))
@@ -40,7 +41,7 @@ public class DeviceIdManager {
         int next = max + 1;
         String newId = String.format("%s%03d", prefix, next);
 
-        assignedIds.add(newId); // ✅ Ensure ID is stored before returning
+        assignedIds.add(newId);
         return newId;
     }
 
@@ -49,8 +50,20 @@ public class DeviceIdManager {
         return generateId(type.name());
     }
 
-    // ✅ Check if an ID is already assigned
     public synchronized boolean isIdTaken(String id) {
         return assignedIds.contains(id);
+    }
+
+    // 💡 Prefix overrides go here
+    private String resolvePrefix(String deviceTypeName) {
+        System.out.println("🔍 resolvePrefix called with: " + deviceTypeName);
+        return switch (deviceTypeName.toUpperCase()) {
+            case "SMART_LIGHT" -> "SL";
+            case "WASHING_MACHINE" -> "WM";
+            case "DRYER" -> "DR";
+            case "THERMOSTAT" -> "TH";
+            case "LIGHT" -> "LI";
+            default -> deviceTypeName.substring(0, Math.min(2, deviceTypeName.length())).toUpperCase();
+        };
     }
 }

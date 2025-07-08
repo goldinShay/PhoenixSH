@@ -20,6 +20,10 @@ public class Menu {
     private static final NotificationService notificationService = new NotificationService();
 
     public static void show(Map<String, Device> devices, List<Thread> deviceThreads, Scheduler scheduler) {
+        show(devices, deviceThreads, scheduler, scanner); // 👈 default to real scanner
+    }
+
+    public static void show(Map<String, Device> devices, List<Thread> deviceThreads, Scheduler scheduler, Scanner inputScanner) {
         while (true) {
             System.out.println("\n=== WELCOME TO PhoenixSH ===");
             System.out.println("1. Device Menu");
@@ -29,27 +33,18 @@ public class Menu {
             System.out.println("5. Exit");
             System.out.print("Please Select an option: ");
 
-            String choice = scanner.nextLine().trim();
+            String choice = inputScanner.nextLine().trim();
 
             switch (choice) {
-                case "1":
-                    DeviceMenu.DevicesMenu(devices, deviceThreads);
-                    break;
-                case "2":
-                    DeviceMonitor.showMonitorDeviceMenu(devices, scheduler);
-                    break;
+                case "1" -> DeviceMenu.DevicesMenu(devices, deviceThreads);
+                case "2" -> DeviceMonitor.showMonitorDeviceMenu(devices, scheduler);
+                case "3" -> ScheduleMenu.ScheduleMenu(devices, scheduler);
 
-                case "3":
-                    ScheduleMenu.ScheduleMenu(devices, scheduler); // ✅ Now correctly passing `scheduler`
-                    break;
-
-                case "4":
-                    // 🔍 Identify testable OFF devices
+                case "4" -> {
                     List<Device> offDevices = DeviceStorage.getDevices().values().stream()
                             .filter(device -> !device.isOn())
                             .toList();
 
-                    // 🛰️ Fetch all sensors (testable regardless of state)
                     List<Sensor> sensors = new ArrayList<>(SensorStorage.getSensors().values());
 
                     if (offDevices.isEmpty() && sensors.isEmpty()) {
@@ -57,34 +52,26 @@ public class Menu {
                         break;
                     }
 
-                    // 📋 Show devices and sensors together
                     System.out.println("\n=== Testable Devices & Sensors ===");
                     System.out.printf("%-10s%-8s%-20s%-8s%n", "TYPE", "ID", "NAME", "STATE");
                     System.out.println("-----------------------------------------------");
 
                     offDevices.forEach(device -> System.out.printf(
                             "%-10s%-8s%-20s%-8s%n",
-                            "Device",
-                            device.getId(),
-                            device.getName(),
-                            device.getState()
+                            "Device", device.getId(), device.getName(), device.getState()
                     ));
 
                     sensors.forEach(sensor -> System.out.printf(
                             "%-10s%-8s%-20s%-8s%n",
-                            "Sensor",
-                            sensor.getSensorId(),
-                            sensor.getSensorName(),
+                            "Sensor", sensor.getSensorId(), sensor.getSensorName(),
                             sensor.getCurrentReading() + " " + sensor.getUnit()
                     ));
 
-                    // 👉 Ask user for an ID
                     System.out.print("Enter ID of the device or sensor to test (or 0 to cancel): ");
-                    String testId = scanner.nextLine().trim();
+                    String testId = inputScanner.nextLine().trim();
 
                     if (testId.equals("0")) break;
 
-                    // ✅ Check Devices first
                     if (DeviceStorage.getDevices().containsKey(testId)) {
                         Device selected = DeviceStorage.getDevices().get(testId);
                         if (selected.isOn()) {
@@ -94,18 +81,18 @@ public class Menu {
                         }
                     } else if (SensorStorage.getSensors().containsKey(testId)) {
                         Sensor selectedSensor = SensorStorage.getSensors().get(testId);
-                        selectedSensor.testSensorBehavior(); // 🎯 Let polymorphism shine!
+                        selectedSensor.testSensorBehavior();
                     } else {
                         System.out.println("❌ No device or sensor found with ID: " + testId);
                     }
-                    break;
+                }
 
-                case "5":
+                case "5" -> {
                     System.out.println("👋 Exiting Smart Home System. Goodbye!");
                     return;
+                }
 
-                default:
-                    System.out.println("❌ Invalid option. Please try again.");
+                default -> System.out.println("❌ Invalid option. Please try again.");
             }
         }
     }
@@ -145,6 +132,7 @@ public class Menu {
     }
 
     private static void removeDeviceInteractive(Map<String, Device> devices) {
+        // To be implemented
     }
 
     static String capitalize(String str) {

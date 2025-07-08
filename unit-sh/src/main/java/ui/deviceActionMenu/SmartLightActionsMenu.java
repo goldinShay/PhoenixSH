@@ -1,92 +1,140 @@
 package ui.deviceActionMenu;
 
-import devices.Device;
 import devices.SmartLight;
 import devices.actions.SmartLightAction;
-
-import java.util.Scanner;
+import devices.actions.SmartLightEffect;
+import devices.actions.SmartLightRgbEditor;
+import utils.Input;
 
 public class SmartLightActionsMenu {
-    private static final Scanner scanner = new Scanner(System.in);
 
-    public static void show(Device device) {
-        if (!(device instanceof SmartLight light)) {
-            System.out.println("⚠️ This menu is only for SmartLight devices.");
-            return;
-        }
+    public static void show(SmartLight smart) {
+        boolean back = false;
 
-        boolean isCalexA60E27 = "Calex A60E27".equalsIgnoreCase(light.getModel());
-
-        while (true) {
+        while (!back) {
             System.out.println("\n=== Smart Light Actions ===");
-            System.out.println("Power: " + (light.isOn() ? "ON" : "OFF"));
-            System.out.println("1 - Turn ON");
-            System.out.println("2 - Turn OFF");
 
-            if (isCalexA60E27) {
-                System.out.println("3 - Set Custom Light Mode (RGB + Intensity)");
-                System.out.println("4 - View Current Mode");
-                System.out.println("5 - Back");
-            } else {
-                System.out.println("3 - Advanced Mode (Not available for this model)");
-                System.out.println("4 - Back");
-            }
+            // Show dynamic status header
+            String effectStatus = smart.getEffect() != SmartLightEffect.NONE
+                    ? "🎞️ Effect: " + smart.getEffect().name()
+                    : smart.getLightMode() != null
+                    ? String.format("🎨 Color: %s (Intensity: %d%%)",
+                    smart.getLightMode().getLabel(),
+                    smart.getLightMode().getIntensity())
+                    : "🎨 Color: None";
 
-            System.out.print("Choose an option: ");
-            String input = scanner.nextLine().trim();
+            System.out.printf("Power: %s | Automation: %s | %s%n",
+                    smart.isOn() ? "ON" : "OFF",
+                    smart.isAutomationEnabled() ? "ENABLED" : "DISABLED",
+                    effectStatus);
 
-            switch (input) {
-                case "1" -> light.turnOn();
-                case "2" -> light.turnOff();
-                case "3" -> {
-                    if (isCalexA60E27) {
-                        System.out.print("Enter brightness (0-100): ");
-                        int brightness = safeInt(scanner.nextLine().trim());
+            // ✅ Menu options
+            System.out.println("""
+                \n1 - Turn ON
+                2 - Turn OFF
+                3 - Toggle Automation
+                4 - Toggle Effect
+                5 - Set Light Mode
+                6 - Adjust RGB Channels
+                7 - Schedule
+                8 - Back
+                """);
 
-                        System.out.print("Enter Red (0-255): ");
-                        int r = safeInt(scanner.nextLine().trim());
-
-                        System.out.print("Enter Green (0-255): ");
-                        int g = safeInt(scanner.nextLine().trim());
-
-                        System.out.print("Enter Blue (0-255): ");
-                        int b = safeInt(scanner.nextLine().trim());
-
-                        SmartLightAction newMode = new SmartLightAction(brightness, r, g, b);
-                        light.setLightMode(newMode);
-                    } else {
-                        System.out.println("ℹ️ This model does not support color/intensity settings.");
-                    }
-                }
-                case "4" -> {
-                    if (isCalexA60E27) {
-                        var mode = light.getLightMode();
-                        System.out.println(mode != null
-                                ? "💡 Current Light Mode: " + mode
-                                : "ℹ️ No custom light mode set yet.");
-                    } else {
-                        System.out.println("↩️ Back to device menu.");
-                        return;
-                    }
-                }
-                case "5" -> {
-                    if (isCalexA60E27) {
-                        System.out.println("↩️ Back to device menu.");
-                        return;
-                    } else {
-                        System.out.println("❌ Invalid option.");
-                    }
-                }
-                default -> System.out.println("❌ Invalid choice. Please try again.");
+            int choice = Input.getInt("Select: ");
+            switch (choice) {
+                case 1 -> smart.turnOn();
+                case 2 -> smart.turnOff();
+                case 3 -> toggleAutomation(smart);
+                case 4 -> utils.SmartLightEffectManager.handleEffectToggle(smart);
+                case 5 -> selectLightMode(smart);
+                case 6 -> SmartLightRgbEditor.launchRgbEditor(smart);
+                case 7 -> System.out.println("📅 Schedule setup coming soon...");
+                case 8 -> back = true;
+                default -> System.out.println("❌ Invalid choice.");
             }
         }
     }
 
-    private static int safeInt(String input) {
-        try {
-            return Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            return 0;
+    private static void toggleAutomation(SmartLight smart) {
+        smart.setAutomationEnabled(!smart.isAutomationEnabled());
+        System.out.printf("🔁 Automation %s.%n", smart.isAutomationEnabled() ? "ENABLED" : "DISABLED");
+    }
+
+    private static void toggleEffect(SmartLight smart) {
+        if (smart.getEffect() == SmartLightEffect.NONE) {
+            System.out.println("\n🌈 Available Effects:");
+            SmartLightEffect[] effects = SmartLightEffect.values();
+            for (int i = 0; i < effects.length; i++) {
+                if (effects[i] != SmartLightEffect.NONE)
+                    System.out.printf("%d - %s%n", i + 1, effects[i]);
+            }
+
+            int choice = Input.getInt("Pick effect: ", 1, effects.length - 1);
+            smart.applyEffect(effects[choice - 1]);
+        } else {
+            smart.applyEffect(SmartLightEffect.NONE);
+            System.out.println("🛑 Effect disabled.");
         }
+    }
+
+    private static void selectLightMode(SmartLight smart) {
+        if (!smart.supportsCustomMode()) {
+            System.out.println("⚠️ This model does not support static light modes.");
+            return;
+        }
+
+        SmartLightAction custom = new SmartLightAction("CUSTOM", 100, 100, 100, 100);
+        smart.setLightMode(custom);
+        smart.applyEffect(SmartLightEffect.NONE);
+        smart.turnOn();
+        System.out.println("✨ CUSTOM mode applied (100,100,100)");
+    }
+
+    private static void adjustRGB(SmartLight smart) {
+        SmartLightAction mode = smart.getLightMode();
+        if (mode == null) {
+            System.out.println("⚠️ No light mode set. Applying CUSTOM first.");
+            selectLightMode(smart);
+            mode = smart.getLightMode();
+        }
+
+        int r = mode.getRed();
+        int g = mode.getGreen();
+        int b = mode.getBlue();
+        int intensity = mode.getIntensity();
+
+        boolean back = false;
+        while (!back) {
+            System.out.printf("\n🎛️ RGB Control — Current: R:%d G:%d B:%d | Intensity: %d%%%n", r, g, b, intensity);
+            System.out.println("""
+                1 - Set Red
+                2 - Set Green
+                3 - Set Blue
+                4 - Increase Intensity
+                5 - Decrease Intensity
+                6 - Apply
+                7 - Back
+                """);
+
+            int choice = Input.getInt("Choice: ");
+            switch (choice) {
+                case 1 -> r = getChannelValue("Red");
+                case 2 -> g = getChannelValue("Green");
+                case 3 -> b = getChannelValue("Blue");
+                case 4 -> intensity = Math.min(100, intensity + 10);
+                case 5 -> intensity = Math.max(10, intensity - 10);
+                case 6 -> {
+                    smart.setLightMode(new SmartLightAction("CUSTOM", intensity, r, g, b));
+                    smart.turnOn();
+                    System.out.println("✅ Custom color applied.");
+                }
+                case 7 -> back = true;
+                default -> System.out.println("❌ Invalid.");
+            }
+        }
+    }
+
+    private static int getChannelValue(String channel) {
+        return Input.getInt("Enter " + channel + " (0-100): ", 0, 100);
     }
 }

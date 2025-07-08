@@ -2,6 +2,7 @@ package ui.deviceActionMenu;
 
 import devices.Device;
 import devices.Light;
+import ui.AutoOpController;
 
 import java.util.Scanner;
 
@@ -20,10 +21,9 @@ public class LightActionsMenu {
             System.out.println("Automation: " + (light.isAutomationEnabled() ? "ENABLED" : "DISABLED"));
             System.out.println("1 - Turn ON");
             System.out.println("2 - Turn OFF");
-            System.out.println("3 - Enable AutoOp");
-            System.out.println("4 - Disable AutoOp");
-            System.out.println("5 - Status");
-            System.out.println("6 - Back");
+            System.out.println("3 - AutoOp");
+            System.out.println("4 - Status");
+            System.out.println("5 - Back");
 
             System.out.print("Choose an option: ");
             String choice = scanner.nextLine().trim();
@@ -31,16 +31,9 @@ public class LightActionsMenu {
             switch (choice) {
                 case "1" -> light.turnOn();
                 case "2" -> light.turnOff();
-                case "3" -> {
-                    light.enableAutoMode();
-                    light.setAutomationEnabled(true);
-                }
-                case "4" -> {
-                    light.disableAutoMode();
-                    light.setAutomationEnabled(false);
-                }
-                case "5" -> light.status();
-                case "6" -> {
+                case "3" -> AutoOpController.display(light);
+                case "4" -> light.status();
+                case "5" -> {
                     System.out.println("↩️ Back to device menu.");
                     return;
                 }

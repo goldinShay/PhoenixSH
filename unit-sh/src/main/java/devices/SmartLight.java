@@ -1,16 +1,33 @@
 package devices;
 
+import devices.actions.SmartLightEffect;
 import devices.actions.SmartLightAction;
 import utils.DeviceDefaults;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SmartLight extends Device {
 
     private String brand;
     private String model;
     private SmartLightAction lightMode;
+    private int red = 100;
+    private int green = 100;
+    private int blue = 100;
+//    private Thread animationThread;
+//    private volatile boolean animationRunning;
+    private SmartLightEffect currentEffect = SmartLightEffect.NONE;
+
+    public void applyColor(int r, int g, int b) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        // Future: push to hardware bridge or UI
+        System.out.printf("🌈 %s color set to RGB(%d, %d, %d)%n", getName(), r, g, b);
+    }
 
     // 🏗️ Constructor: full parameter set
     public SmartLight(String deviceId, String name, String brand, String model, Clock clock, boolean isOn,
@@ -31,6 +48,17 @@ public class SmartLight extends Device {
                 DeviceDefaults.getDefaultAutoOn(DeviceType.SMART_LIGHT),
                 DeviceDefaults.getDefaultAutoOn(DeviceType.SMART_LIGHT)); // Mirror OFF
     }
+    public SmartLight(String deviceId, String name, Clock clock, boolean isOn,
+                      double autoOnThreshold, double autoOffThreshold) {
+        super(deviceId, name, DeviceType.SMART_LIGHT, clock, autoOnThreshold, autoOffThreshold);
+        setOn(isOn);
+
+        // Optional: set a default light mode
+        if (supportsCustomMode()) {
+            this.lightMode = new SmartLightAction(100, 100, 90, 80); // WARM_WHITE
+        }
+    }
+
 
     // 📝 Lightweight serialization
     public String toDataString() {
@@ -69,6 +97,10 @@ public class SmartLight extends Device {
     public String getBrand() {
         return brand;
     }
+    public SmartLightEffect getEffect() {
+        return currentEffect;
+    }
+
 
     // 🔁 Device behavior
     @Override
@@ -111,4 +143,18 @@ public class SmartLight extends Device {
                 getName(), model, isOn() ? "ON" : "OFF",
                 lightMode != null ? lightMode : "Default");
     }
+    public static Map<String, SmartLightAction> loadStaticModesFromExcel() {
+        // 🚧 TODO: Load from Excel
+        return new HashMap<>();
+    }
+    public void applyEffect(SmartLightEffect effect) {
+        if (!supportsCustomMode()) {
+            System.out.println("⚠️ This model does not support animated effects.");
+            return;
+        }
+
+        this.currentEffect = effect != null ? effect : SmartLightEffect.NONE;
+        System.out.println("🌠 Animation set to: " + this.currentEffect.name());
+    }
+
 }

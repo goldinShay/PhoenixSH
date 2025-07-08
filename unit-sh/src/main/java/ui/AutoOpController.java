@@ -2,19 +2,20 @@
 package ui;
 
 import devices.Device;
-import sensors.Sensor;
-import storage.DeviceStorage;
-import storage.SensorStorage;
-import storage.XlCreator;
-import utils.AutoOpManager;
 
 import java.util.Scanner;
 
 public class AutoOpController {
 
-    private static final Scanner scanner = new Scanner(System.in);
+    private static final Scanner defaultScanner = new Scanner(System.in);
 
+    // 👇 New overload for test input
     public static void display(Device device) {
+        display(device, defaultScanner);
+    }
+
+    // 👇 Test-friendly variant
+    public static void display(Device device, Scanner scanner) {
         System.out.println("\n=== AutoOp Settings ===");
         System.out.println("Current AutoOp: " + (device.isAutomationEnabled() ? "🟢 ENABLED" : "🔴 DISABLED"));
         System.out.println("Linked Sensor: " + (device.getAutomationSensorId() != null ? device.getAutomationSensorId() : "None"));
@@ -33,3 +34,4 @@ public class AutoOpController {
         }
     }
 }
+

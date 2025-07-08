@@ -105,6 +105,13 @@ public abstract class Device implements Runnable {
         this.autoOnThreshold = value;
         this.autoOnUserDefined = userSet;
     }
+    public void enableAutoMode() {
+        System.out.println("🔄 Auto Mode Enabled for " + name);
+    }
+
+    public void disableAutoMode() {
+        System.out.println("🚫 Auto Mode Disabled for " + name);
+    }
     public void setAutoOffThreshold(double value) {
         this.autoOffThreshold = value;
     }
@@ -242,6 +249,7 @@ public abstract class Device implements Runnable {
     public static void clearDeviceRegistryForTests() {
         REGISTERED_IDS.clear();
     }
+
 
 
 

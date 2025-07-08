@@ -12,6 +12,12 @@ public class XlWorkbookUtils {
 
     private static Path filePath = Paths.get("/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/shsXl.xlsx");
 
+    public static final String SMART_LIGHT_SHEET = "Smart_Light_Control";
+    public static final String[] SMART_LIGHT_HEADERS = {
+            "MODE_NAME", "R", "G", "B", "IS_DEFAULT",
+            "EFFECT_NAME", "TYPE", "PARAMS"
+    };
+
     public static Path getFilePath() {
         return filePath;
     }
@@ -19,7 +25,6 @@ public class XlWorkbookUtils {
     public static void overrideFilePath(Path newPath) {
         filePath = newPath;
     }
-
 
     public static String getCellValue(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
@@ -68,6 +73,13 @@ public class XlWorkbookUtils {
         }
     }
 
+    public static void ensureSmartLightSheetExists(Workbook workbook) {
+        Sheet sheet = workbook.getSheet(SMART_LIGHT_SHEET);
+        if (sheet == null) {
+            createSheetWithHeaders(workbook, SMART_LIGHT_SHEET, SMART_LIGHT_HEADERS);
+        }
+    }
+
     public static boolean ensureFileExists() {
         File file = getFilePath().toFile();
 
@@ -80,10 +92,20 @@ public class XlWorkbookUtils {
 
             if (input.equalsIgnoreCase("Y")) {
                 try {
-                    // TODO: Call your creation method here, e.g.:
-                    // return XlCreator.createShsXlFile();
+                    Workbook workbook = new XSSFWorkbook();
+                    createSheetWithHeaders(workbook, "Scheduled Tasks", "TaskID", "DeviceID", "Action", "Time");
+                    createSheetWithHeaders(workbook, "Devices", "Type", "ID", "Name", "Brand", "Model", "AutoEnabled", "AutoOn", "AutoOff", "RGB_R", "RGB_G", "RGB_B", "ACTIVE_MODE");
+                    createSheetWithHeaders(workbook, "Sensors", "SensorID", "Name", "Type", "CurrentValue");
+                    createSheetWithHeaders(workbook, "Sense_Control", "SensorID", "SlaveDeviceID");
+                    createSheetWithHeaders(workbook, SMART_LIGHT_SHEET, SMART_LIGHT_HEADERS);
+
+                    try (FileOutputStream fos = new FileOutputStream(file)) {
+                        workbook.write(fos);
+                    }
+                    workbook.close();
+                    System.out.println("✅ New Excel file created.");
                     return true;
-                } catch (Exception e) {
+                } catch (IOException e) {
                     System.err.println("❌ Failed to create Excel file: " + e.getMessage());
                     return false;
                 }
@@ -96,7 +118,6 @@ public class XlWorkbookUtils {
         return true;
     }
 
-
     public static Workbook getWorkbook(String path) throws IOException {
         File file = new File(path);
         if (!file.exists()) file.createNewFile();
@@ -105,10 +126,9 @@ public class XlWorkbookUtils {
         }
     }
 
-
     @FunctionalInterface
     public interface MultiSheetConsumer {
-        void accept(Sheet tasks, Sheet devices, Sheet sensors, Sheet senseControl) throws IOException;
+        void accept(Sheet tasks, Sheet devices, Sheet sensors, Sheet senseControl, Sheet smartLightControl) throws IOException;
     }
 
     public static boolean updateWorkbook(MultiSheetConsumer consumer) {
@@ -117,17 +137,20 @@ public class XlWorkbookUtils {
         try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = WorkbookFactory.create(fis)) {
 
+            ensureSmartLightSheetExists(workbook);
+
             Sheet tasks = workbook.getSheet("Scheduled Tasks");
             Sheet devices = workbook.getSheet("Devices");
             Sheet sensors = workbook.getSheet("Sensors");
             Sheet senseControl = workbook.getSheet("Sense_Control");
+            Sheet smartLightControl = workbook.getSheet(SMART_LIGHT_SHEET);
 
-            if (tasks == null || devices == null || sensors == null || senseControl == null) {
+            if (tasks == null || devices == null || sensors == null || senseControl == null || smartLightControl == null) {
                 System.err.println("❌ Missing required sheet(s). Aborting update.");
                 return false;
             }
 
-            consumer.accept(tasks, devices, sensors, senseControl);
+            consumer.accept(tasks, devices, sensors, senseControl, smartLightControl);
 
             try (FileOutputStream fos = new FileOutputStream(getFilePath().toFile())) {
                 workbook.write(fos);
@@ -140,6 +163,7 @@ public class XlWorkbookUtils {
             return false;
         }
     }
+
     public static boolean isExcelFileHealthy(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {
             new XSSFWorkbook(fis).close();
@@ -149,7 +173,4 @@ public class XlWorkbookUtils {
             return false;
         }
     }
-
-
-
 }

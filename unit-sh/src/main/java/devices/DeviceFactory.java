@@ -77,6 +77,47 @@ public class DeviceFactory {
                 light.setAutomationEnabled(autoEnabled);
                 return light;
             }
+            case SMART_LIGHT -> {
+                boolean savedState = getSavedState(id);
+                double autoOnThreshold = 1024.0;
+                double autoOffThreshold = 1050.0;
+                boolean autoEnabled = false;
+
+                try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath().toFile());
+                     Workbook workbook = new XSSFWorkbook(fis)) {
+
+                    Sheet sheet = workbook.getSheet("Devices");
+                    if (sheet != null) {
+                        for (Row row : sheet) {
+                            if (row.getRowNum() == 0) continue;
+                            if (row.getCell(1).getStringCellValue().equalsIgnoreCase(id)) {
+                                autoOnThreshold = Optional.ofNullable(row.getCell(6))
+                                        .map(Cell::getNumericCellValue)
+                                        .orElse(autoOnThreshold);
+                                autoOffThreshold = Optional.ofNullable(row.getCell(7))
+                                        .map(Cell::getNumericCellValue)
+                                        .orElse(autoOffThreshold);
+
+                                Cell autoCell = row.getCell(5);
+                                if (autoCell != null) {
+                                    autoEnabled = switch (autoCell.getCellType()) {
+                                        case BOOLEAN -> autoCell.getBooleanCellValue();
+                                        case STRING -> Boolean.parseBoolean(autoCell.getStringCellValue().trim());
+                                        default -> false;
+                                    };
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    Log.error("🛑 Failed to load threshold values for SmartLight " + id + ": " + e.getMessage());
+                }
+
+                SmartLight smartLight = new SmartLight(id, name, clock, savedState, autoOnThreshold, autoOffThreshold);
+                smartLight.setAutomationEnabled(autoEnabled);
+                return smartLight;
+            }
 
             case DRYER -> {
                 String brand = "Generic";

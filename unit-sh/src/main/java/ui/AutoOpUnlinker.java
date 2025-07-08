@@ -2,27 +2,33 @@ package ui;
 
 import devices.Device;
 import sensors.Sensor;
+import storage.DevicePersistence;
+import storage.ExcelDevicePersistence;
 import storage.SensorStorage;
-import storage.XlCreator;
 
 public class AutoOpUnlinker {
+
+    private static DevicePersistence persistence = new ExcelDevicePersistence();
+
+    public static void setPersistence(DevicePersistence customPersistence) {
+        persistence = customPersistence;
+    }
 
     public static void disable(Device device) {
         String sensorId = device.getAutomationSensorId();
 
-        // 📴 Update device's automation state
         device.setAutomationEnabled(false);
         device.setAutomationSensorId(null);
+        device.setLinkedSensor(null);
+        device.disableAutoMode();
 
-        boolean success = XlCreator.updateDevice(device);
-        if (!success) {
+        if (!persistence.updateDevice(device)) {
             System.out.println("⚠️ Failed to save AutoOp disablement.");
             return;
         }
 
         System.out.println("💾 AutoOp DISABLED and saved to Excel.");
 
-        // 👋 Remove from linked sensor's slave list
         Sensor sensor = SensorStorage.getSensors().get(sensorId);
         if (sensor != null) {
             sensor.getSlaves().remove(device);
@@ -30,8 +36,7 @@ public class AutoOpUnlinker {
                     device.getId(), sensor.getSensorId());
         }
 
-        // 🧹 Remove Excel Sense_Control mapping
-        if (XlCreator.removeSensorLink(device.getId())) {
+        if (persistence.removeSensorLink(device.getId())) {
             System.out.println("🧻 Device mapping removed from Sense_Control sheet.");
         } else {
             System.out.println("⚠️ Failed to remove mapping from Sense_Control.");

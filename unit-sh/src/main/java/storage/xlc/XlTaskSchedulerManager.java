@@ -5,13 +5,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import utils.Log;
 
 import java.io.*;
-import java.nio.file.Path;
-import java.time.ZonedDateTime;
 import java.util.*;
 
 import static storage.xlc.XlWorkbookUtils.*;
-import static storage.xlc.XlWorkbookUtils.isExcelFileHealthy;
-
 
 public class XlTaskSchedulerManager {
     private static final String SHEET_TASKS = "Scheduled Tasks";
@@ -44,7 +40,7 @@ public class XlTaskSchedulerManager {
     }
 
     public static boolean addTask(String deviceId, String name, String action, String timestamp, String repeat) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             int rowNum = getFirstAvailableRow(tasks);
             Row row = tasks.createRow(rowNum);
             setCell(row, 0, deviceId);
@@ -57,12 +53,13 @@ public class XlTaskSchedulerManager {
     }
 
     public static boolean updateTask(String deviceId, String newTimestamp, String newRepeat) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
             for (Row row : tasks) {
                 if (row.getRowNum() == 0) continue;
                 if (getCellValue(row, 0).equals(deviceId)) {
                     setCell(row, 3, newTimestamp);
                     setCell(row, 4, newRepeat);
+                    Log.debug("♻️ Task updated for: " + deviceId);
                     break;
                 }
             }
@@ -70,15 +67,19 @@ public class XlTaskSchedulerManager {
     }
 
     public static boolean deleteTask(String deviceId) {
-        return updateWorkbook((tasks, devices, sensors, senseControl) -> {
-            for (Row row : tasks) {
-                if (row.getRowNum() == 0) continue;
-                if (getCellValue(row, 0).equals(deviceId)) {
+        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
+            int lastRow = tasks.getLastRowNum();
+            for (int i = 1; i <= lastRow; i++) {
+                Row row = tasks.getRow(i);
+                if (row != null && getCellValue(row, 0).equalsIgnoreCase(deviceId)) {
                     tasks.removeRow(row);
+                    if (i < lastRow) {
+                        tasks.shiftRows(i + 1, lastRow, -1);
+                    }
+                    Log.debug("🗑️ Task removed for: " + deviceId);
                     break;
                 }
             }
         });
     }
-
 }

@@ -1,4 +1,4 @@
-package devicesTests;
+package devicesTests.actionsTests;
 
 import devices.actions.DeviceAction;
 import org.junit.jupiter.api.Test;

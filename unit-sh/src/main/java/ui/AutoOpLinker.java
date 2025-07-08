@@ -2,58 +2,56 @@ package ui;
 
 import devices.Device;
 import sensors.Sensor;
-import storage.DeviceStorage;
 import storage.SensorStorage;
-import storage.XlCreator;
 import utils.AutoOpManager;
 
 import java.util.Scanner;
+import java.util.Map;
+
 
 public class AutoOpLinker {
-    private static final Scanner scanner = new Scanner(System.in);
+    private static final Scanner defaultScanner = new Scanner(System.in);
 
     public static void enable(Device device) {
-        System.out.println("\nAvailable Sensors:");
-        SensorStorage.getSensors().forEach((sid, sensor) ->
-                System.out.printf(" - %s (%s, %s)%n", sid, sensor.getSensorName(), sensor.getUnit()));
+        enable(device, defaultScanner);
+    }
 
-        System.out.print("Enter Sensor ID to assign as Master: ");
-        String sensorId = scanner.nextLine().trim();
+    // 👉 Add this method for testing
+    public static void enable(Device device, Scanner scanner) {
+        System.out.println("\n📡 Available Sensors:");
 
-        Sensor sensor = SensorStorage.getSensors().get(sensorId);
-
-        if (sensor == null) {
-            System.out.println("❌ Invalid Sensor ID.");
+        if (SensorStorage.getSensors().isEmpty()) {
+            System.out.println("⚠️ No sensors available.");
             return;
         }
 
-        Device freshDevice = DeviceStorage.getDevices().get(device.getId());
-        freshDevice.setAutomationEnabled(true);
-        freshDevice.setAutomationSensorId(sensorId);
-
-        if (!sensor.getSlaves().contains(freshDevice)) {
-            sensor.addSlave(freshDevice);
+        for (Map.Entry<String, Sensor> entry : SensorStorage.getSensors().entrySet()) {
+            Sensor s = entry.getValue();
+            try {
+                int reading = s.getCurrentReading();
+                System.out.printf("→ %s | %s | Current: %d.0%n", s.getSensorId(), s.getSensorName(), reading);
+            } catch (Exception e) {
+                System.out.printf("→ %s | %s | Current: ⚠️ Invalid reading (%s)%n", s.getSensorId(), s.getSensorName(), e.getMessage());
+            }
         }
 
-        if (XlCreator.updateDevice(freshDevice)) {
-            System.out.println("💾 AutoOp status saved to Excel.");
-        } else {
-            System.out.println("⚠️ Failed to update Excel with AutoOp state.");
+        System.out.print("Enter sensor ID to link with device '" + device.getName() + "': ");
+        String sensorId = scanner.nextLine().trim();
+
+        Sensor selected = SensorStorage.getSensors().get(sensorId);
+        if (selected == null) {
+            System.out.println("❌ Sensor not found. AutoOp not enabled.");
+            return;
         }
 
-        System.out.printf("✅ Linking %s (%s) → AUTO-ON: %.1f | AUTO-OFF: %.1f%n",
-                freshDevice.getName(),
-                freshDevice.getId(),
-                freshDevice.getAutoOnThreshold(),
-                freshDevice.getAutoOffThreshold());
+        selected.addSlave(device);
+        device.setAutomationSensorId(sensorId);
+        device.setAutomationEnabled(true);
+        device.enableAutoMode();
 
-        AutoOpManager.persistLink(freshDevice, sensor);
-        sensor.notifySlaves(sensor.getCurrentValue());
-
-        System.out.println("✅ AutoOp ENABLED for device: " + freshDevice.getName());
-        System.out.println("🔗 Linked to sensor: " + sensor.getSensorName() + " (" + sensorId + ")");
-        System.out.printf("📊 Thresholds → Auto-ON: %.0f %s | Auto-OFF: %.0f %s%n",
-                freshDevice.getAutoOnThreshold(), sensor.getUnit(),
-                freshDevice.getAutoOffThreshold(), sensor.getUnit());
+        boolean persisted = AutoOpManager.persistLink(device, selected);
+        if (persisted) {
+            System.out.printf("🔗 '%s' successfully linked to sensor '%s'.%n", device.getName(), selected.getSensorName());
+        }
     }
 }

@@ -2,16 +2,15 @@ package ui;
 
 import devices.Device;
 import scheduler.Scheduler;
+import sensors.Sensor;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
-
-import static ui.Menu.scanner;
+import java.util.*;
 
 public class ScheduleMenu {
 
-    public static void ScheduleMenu(Map<String, Device> devices, Scheduler scheduler) {
+    public static void ScheduleMenu(Map<String, Device> devices, Scheduler scheduler, Scanner inputScanner) {
         boolean back = false;
 
         while (!back) {
@@ -22,20 +21,24 @@ public class ScheduleMenu {
             System.out.println("4 - Delete a Task");
             System.out.println("5 - Back");
             System.out.print("Choose an option: ");
-            String input = scanner.nextLine();
+            String input = inputScanner.nextLine();
 
             switch (input) {
                 case "1" -> scheduler.printScheduledTasks();
-                case "2" -> scheduleNewTask(devices, scheduler);
-                case "3" -> updateTaskFlow(scheduler);
-                case "4" -> deleteTaskFlow(scheduler);
+                case "2" -> scheduleNewTask(devices, scheduler, inputScanner);
+                case "3" -> updateTaskFlow(scheduler, inputScanner);
+                case "4" -> deleteTaskFlow(scheduler, inputScanner);
                 case "5" -> back = true;
                 default -> System.out.println("❌ Invalid option. Please choose 1-5.");
             }
         }
     }
 
-    private static void scheduleNewTask(Map<String, Device> devices, Scheduler scheduler) {
+    public static void ScheduleMenu(Map<String, Device> devices, Scheduler scheduler) {
+        ScheduleMenu(devices, scheduler, new Scanner(System.in));
+    }
+
+    private static void scheduleNewTask(Map<String, Device> devices, Scheduler scheduler, Scanner scanner) {
         if (devices.isEmpty()) {
             System.out.println("📭 No available devices to schedule.");
             return;
@@ -61,28 +64,28 @@ public class ScheduleMenu {
         System.out.print("Enter action to perform (e.g., 'on', 'off'): ");
         String action = scanner.nextLine().trim();
 
-        LocalDateTime scheduledTime = getScheduledTime();
-        String repeat = getRepeatFrequency();
+        LocalDateTime scheduledTime = getScheduledTime(scanner);
+        String repeat = getRepeatFrequency(scanner);
 
         scheduler.scheduleTask(selectedDevice, action, scheduledTime, repeat);
         System.out.println("✅ Task scheduled for " + selectedDevice.getName() + " at " + scheduledTime);
     }
 
-    private static void updateTaskFlow(Scheduler scheduler) {
+    private static void updateTaskFlow(Scheduler scheduler, Scanner scanner) {
         scheduler.printScheduledTasks();
-        int index = getTaskIndex();
+        int index = getTaskIndex(scanner);
         if (index >= 0) {
-            LocalDateTime newTime = getNewTaskTime();
-            String newRepeat = getNewRepeat();
+            LocalDateTime newTime = getNewTaskTime(scanner);
+            String newRepeat = getNewRepeat(scanner);
             scheduler.updateTask(index, newTime, newRepeat);
         } else {
             System.out.println("❌ Update cancelled.");
         }
     }
 
-    private static void deleteTaskFlow(Scheduler scheduler) {
+    private static void deleteTaskFlow(Scheduler scheduler, Scanner scanner) {
         scheduler.printScheduledTasks();
-        int index = getTaskIndex();
+        int index = getTaskIndex(scanner);
         if (index >= 0) {
             scheduler.removeTask(index);
             System.out.println("🗑️ Task removed.");
@@ -91,7 +94,7 @@ public class ScheduleMenu {
         }
     }
 
-    private static int getTaskIndex() {
+    private static int getTaskIndex(Scanner scanner) {
         System.out.print("📌 Enter task number (or 0 to cancel): ");
         try {
             int taskIndex = Integer.parseInt(scanner.nextLine()) - 1;
@@ -101,7 +104,7 @@ public class ScheduleMenu {
         }
     }
 
-    private static LocalDateTime getScheduledTime() {
+    private static LocalDateTime getScheduledTime(Scanner scanner) {
         System.out.println("\nSelect Task Date:");
         System.out.println("1 - Set Task for Today");
         System.out.println("2 - Choose Specific Date");
@@ -110,7 +113,7 @@ public class ScheduleMenu {
 
         LocalDate taskDate = choice.equals("1")
                 ? LocalDate.now()
-                : getCustomDate();
+                : getCustomDate(scanner);
 
         System.out.print("Enter Time (HH:mm): ");
         String timeInput = scanner.nextLine().trim();
@@ -119,7 +122,7 @@ public class ScheduleMenu {
         return taskDate.atTime(taskTime);
     }
 
-    private static LocalDate getCustomDate() {
+    private static LocalDate getCustomDate(Scanner scanner) {
         try {
             System.out.print("Enter Year: ");
             int year = Integer.parseInt(scanner.nextLine().trim());
@@ -137,17 +140,17 @@ public class ScheduleMenu {
         }
     }
 
-    private static LocalDateTime getNewTaskTime() {
+    private static LocalDateTime getNewTaskTime(Scanner scanner) {
         System.out.print("🕒 Enter new time (yyyy-MM-dd HH:mm): ");
         return LocalDateTime.parse(scanner.nextLine(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
-    private static String getNewRepeat() {
+    private static String getNewRepeat(Scanner scanner) {
         System.out.print("🔁 Enter new repeat (none, daily, weekly, monthly): ");
         return scanner.nextLine().trim().toLowerCase();
     }
 
-    private static String getRepeatFrequency() {
+    private static String getRepeatFrequency(Scanner scanner) {
         System.out.println("\nRepeat Task?");
         System.out.println("1 - None");
         System.out.println("2 - Daily");

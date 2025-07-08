@@ -115,4 +115,8 @@ public class XlCreator {
     public static boolean createNewWorkbook() {
         return XlWorkbookUtils.ensureFileExists();
     }
+    public interface DevicePersistence {
+        boolean updateDevice(Device device);
+        boolean removeSensorLink(String deviceId);
+    }
 }
