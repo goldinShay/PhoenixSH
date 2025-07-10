@@ -2,7 +2,7 @@ package devices;
 
 public enum DeviceType {
 
-    GENERIC,
+    UNKNOWN,
     LIGHT,
     SMART_LIGHT,
     THERMOSTAT,

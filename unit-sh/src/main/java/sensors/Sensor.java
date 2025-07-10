@@ -65,7 +65,7 @@ public abstract class Sensor implements Runnable {
     // ─── 🔁 Live I/O (abstract) ───
     public abstract int readCurrentValue();
     public abstract void simulateValue(int value);
-    public abstract int getCurrentReading();
+    public abstract double getCurrentReading();
 
     // ─── 📎 Linking ───
     public void addSlave(Device device) {

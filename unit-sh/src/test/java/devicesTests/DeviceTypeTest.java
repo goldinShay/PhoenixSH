@@ -38,7 +38,7 @@ public class DeviceTypeTest {
 
     @Test
     void toStringShouldReturnExactEnumName() {
-        assertEquals("GENERIC", DeviceType.GENERIC.toString());
+        assertEquals("GENERIC", DeviceType.UNKNOWN.toString());
         assertEquals("SENSOR", DeviceType.SENSOR.toString());
     }
 }

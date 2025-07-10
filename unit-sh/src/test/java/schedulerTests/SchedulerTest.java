@@ -20,7 +20,7 @@ public class SchedulerTest {
         private String lastAction = "";
 
         public MockDevice(String id, String name) {
-            super(id, name, DeviceType.GENERIC, Clock.systemDefaultZone(), 0, 0);
+            super(id, name, DeviceType.UNKNOWN, Clock.systemDefaultZone(), 0, 0);
         }
 
         @Override

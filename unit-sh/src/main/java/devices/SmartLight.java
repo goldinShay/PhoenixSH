@@ -2,7 +2,6 @@ package devices;
 
 import devices.actions.SmartLightEffect;
 import devices.actions.SmartLightAction;
-import utils.DeviceDefaults;
 
 import java.time.Clock;
 import java.util.HashMap;

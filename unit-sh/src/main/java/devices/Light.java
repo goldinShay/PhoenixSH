@@ -1,7 +1,5 @@
 package devices;
 
-import utils.DeviceDefaults;
-
 import java.time.Clock;
 import java.util.List;
 

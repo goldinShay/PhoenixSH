@@ -8,8 +8,6 @@ import ui.AutoOpController;
 import java.util.Scanner;
 
 public class WasherActionsMenu {
-    private static final Scanner scanner = new Scanner(System.in);
-
     public static void show(Device device) {
         if (!(device instanceof WashingMachine washer)) {
             System.out.println("⚠️ This menu is only for Washing Machines.");
@@ -17,6 +15,7 @@ public class WasherActionsMenu {
         }
 
         boolean isBoschFlagship = "BWM14025".equalsIgnoreCase(washer.getModel());
+        Scanner scanner = new Scanner(System.in); // ✅ fresh scanner for test compatibility
 
         while (true) {
             System.out.println("\n=== Washing Machine Actions ===");

@@ -16,7 +16,7 @@ public class ScheduledTaskTest {
 
     private static class MockDevice extends Device {
         public MockDevice(String id, String name, Clock clock) {
-            super(id, name, DeviceType.GENERIC, clock, 0.0, 0.0);
+            super(id, name, DeviceType.UNKNOWN, clock, 0.0, 0.0);
         }
 
         @Override

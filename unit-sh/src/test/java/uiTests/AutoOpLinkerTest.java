@@ -35,7 +35,7 @@ class AutoOpLinkerTest {
         Sensor mockSensor = mock(Sensor.class);
         when(mockSensor.getSensorId()).thenReturn("S1");
         when(mockSensor.getSensorName()).thenReturn("TempSensor");
-        when(mockSensor.getCurrentReading()).thenReturn(23);
+        when(mockSensor.getCurrentReading()).thenReturn(23.0);
 
         SensorStorage.getSensors().put("S1", mockSensor);
 
@@ -70,7 +70,7 @@ class AutoOpLinkerTest {
         Sensor mockSensor = mock(Sensor.class);
         when(mockSensor.getSensorId()).thenReturn("REAL");
         when(mockSensor.getSensorName()).thenReturn("Sensor");
-        when(mockSensor.getCurrentReading()).thenReturn(42);
+        when(mockSensor.getCurrentReading()).thenReturn(42.69);
 
         SensorStorage.getSensors().put("REAL", mockSensor);
 

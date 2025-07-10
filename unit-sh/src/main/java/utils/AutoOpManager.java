@@ -1,85 +1,66 @@
 package utils;
 
 import devices.Device;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import sensors.Sensor;
+import storage.AutoOpExcelReader;
+import storage.AutoOpExcelReader.AutoOpRecord;
 import storage.DeviceStorage;
 import storage.SensorStorage;
 import storage.XlCreator;
-import storage.xlc.XlWorkbookUtils;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.util.List;
 
 public class AutoOpManager {
 
-    // 📥 Load AutoOp links from Excel's Sense_Control sheet (on system startup)
+    // 📥 Load AutoOp links from Excel using external reader
     public static void loadMappingsFromExcel() {
-        try (FileInputStream fis = new FileInputStream(XlWorkbookUtils.getFilePath().toFile());
-             Workbook workbook = new XSSFWorkbook(fis)) {
+        List<AutoOpRecord> links = AutoOpExcelReader.readLinks();
+        if (links.isEmpty()) {
+            System.out.println("⚠️ No mappings found in Excel.");
+            return;
+        }
 
-            Sheet controlSheet = workbook.getSheet("Sense_Control");
-            if (controlSheet == null) {
-                System.out.println("⚠️ Sense_Control sheet not found.");
-                return;
+        for (AutoOpRecord record : links) {
+            String slaveId = record.slaveId();
+            String sensorId = record.sensorId();
+            double autoOn = record.autoOn();
+            double autoOff = record.autoOff();
+
+            Device slave = DeviceStorage.getDevices().get(slaveId);
+            Sensor master = SensorStorage.getSensors().get(sensorId);
+
+            if (slave == null) {
+                System.out.printf("⚠️ Missing device in memory: %s%n", slaveId);
+                continue;
             }
 
-            for (Row row : controlSheet) {
-                if (row.getRowNum() == 0) continue;
-
-                try {
-                    String slaveId = row.getCell(1).getStringCellValue().trim();
-                    String sensorId = row.getCell(3).getStringCellValue().trim();
-
-                    Device slave = DeviceStorage.getDevices().get(slaveId);
-                    Sensor master = SensorStorage.getSensors().get(sensorId);
-
-                    if (slave == null) {
-                        System.out.printf("⚠️ Missing device in memory: %s%n", slaveId);
-                        continue;
-                    }
-
-                    if (master == null) {
-                        System.out.printf("⚠️ Missing sensor in memory: %s%n", sensorId);
-                        continue;
-                    }
-
-                    // 🔁 Restore thresholds from Excel (Sense_Control)
-                    double autoOn = row.getCell(4).getNumericCellValue();
-                    double autoOff = row.getCell(5).getNumericCellValue();
-                    slave.setAutoOnThreshold(autoOn, true);   // Marks as user-defined
-                    slave.setAutoOffThreshold(autoOff);
-
-                    System.out.printf("AutoOp threshold for %s: ON=%.1f | OFF=%.1f%n",
-                            slave.getId(), slave.getAutoOnThreshold(), slave.getAutoOffThreshold());
-
-                    // 🧠 Reactivate automation state in memory
-                    slave.setAutomationEnabled(true);
-                    slave.setAutomationSensorId(sensorId);
-
-                    // 🔒 Only add if not already present
-                    if (!master.getSlaves().contains(slave)) {
-                        master.addSlave(slave);
-                    }
-
-                    System.out.printf("🔗 Restored link → %s → %s | AutoOp: %b | ON: %.1f | OFF: %.1f | Ref: %s%n",
-                            slave.getId(), master.getSensorId(), slave.isAutomationEnabled(),
-                            slave.getAutoOnThreshold(), slave.getAutoOffThreshold(),
-                            System.identityHashCode(slave));
-
-                } catch (Exception ex) {
-                    System.out.printf("⚠️ Error restoring row %d → %s%n", row.getRowNum(), ex.getMessage());
-                }
+            if (master == null) {
+                System.out.printf("⚠️ Missing sensor in memory: %s%n", sensorId);
+                continue;
             }
 
-        } catch (IOException e) {
-            Log.error("🛑 Failed to read Sense_Control sheet: " + e.getMessage());
+            // 🔁 Restore thresholds from Excel
+            slave.setAutoOnThreshold(autoOn, true);   // Marks as user-defined
+            slave.setAutoOffThreshold(autoOff);
+
+            System.out.printf("AutoOp threshold for %s: ON=%.1f | OFF=%.1f%n",
+                    slave.getId(), slave.getAutoOnThreshold(), slave.getAutoOffThreshold());
+
+            // 🧠 Reactivate automation state in memory
+            slave.setAutomationEnabled(true);
+            slave.setAutomationSensorId(sensorId);
+
+            // 🔒 Add to sensor if not already present
+            if (!master.getSlaves().contains(slave)) {
+                master.addSlave(slave);
+            }
+
+            System.out.printf("🔗 Restored link → %s → %s | AutoOp: %b | ON: %.1f | OFF: %.1f | Ref: %s%n",
+                    slave.getId(), master.getSensorId(), slave.isAutomationEnabled(),
+                    slave.getAutoOnThreshold(), slave.getAutoOffThreshold(),
+                    System.identityHashCode(slave));
         }
     }
-
 
     // 🔗 Save a new AutoOp link to Excel
     public static boolean persistLink(Device slave, Sensor master) {
@@ -106,7 +87,7 @@ public class AutoOpManager {
     // 🧠 Refresh runtime links after Excel rehydrate
     public static void restoreMemoryLinks() {
         System.out.println("🔁 Restoring AutoOp memory mappings...");
-        loadMappingsFromExcel(); // your actual Excel parse logic will go here
+        loadMappingsFromExcel();
     }
 
     // 🪄 Manual trigger if you want to rescan sensor thresholds
@@ -125,10 +106,7 @@ public class AutoOpManager {
                         System.identityHashCode(slave));
             }
 
-            // ✅ Now safely trigger device logic
             sensor.notifySlaves(value);
         }
     }
-
-
 }

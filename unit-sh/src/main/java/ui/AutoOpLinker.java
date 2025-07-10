@@ -28,7 +28,7 @@ public class AutoOpLinker {
         for (Map.Entry<String, Sensor> entry : SensorStorage.getSensors().entrySet()) {
             Sensor s = entry.getValue();
             try {
-                int reading = s.getCurrentReading();
+                double reading = s.getCurrentReading();
                 System.out.printf("→ %s | %s | Current: %d.0%n", s.getSensorId(), s.getSensorName(), reading);
             } catch (Exception e) {
                 System.out.printf("→ %s | %s | Current: ⚠️ Invalid reading (%s)%n", s.getSensorId(), s.getSensorName(), e.getMessage());

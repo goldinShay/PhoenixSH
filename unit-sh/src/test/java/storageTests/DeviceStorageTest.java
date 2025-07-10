@@ -8,7 +8,6 @@ import storage.DeviceStorage;
 
 import java.time.Clock;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +18,7 @@ public class DeviceStorageTest {
         public boolean turnedOff = false;
 
         public TestDevice(String id) {
-            super(id, "StubDevice", DeviceType.GENERIC, Clock.systemDefaultZone(), 1000.0, 1000.0);
+            super(id, "StubDevice", DeviceType.UNKNOWN, Clock.systemDefaultZone(), 1000.0, 1000.0);
         }
 
         @Override

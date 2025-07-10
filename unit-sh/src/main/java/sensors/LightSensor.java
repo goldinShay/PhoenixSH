@@ -47,7 +47,7 @@ public class LightSensor extends Sensor {
     }
 
     @Override
-    public int getCurrentReading() {
+    public double getCurrentReading() {
         return currentValue; // This keeps the logic consistent with simulateValue()
     }
 
@@ -55,4 +55,5 @@ public class LightSensor extends Sensor {
     public String toString() {
         return "[LightSensor] " + sensorName + " (" + sensorId + ") - Current: " + currentValue + " " + unit;
     }
+
 }

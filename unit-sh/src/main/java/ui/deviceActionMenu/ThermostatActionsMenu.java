@@ -7,13 +7,13 @@ import java.util.Scanner;
 
 public class ThermostatActionsMenu {
 
-    private static final Scanner scanner = new Scanner(System.in);
-
     public static void show(Device device) {
         if (!(device instanceof Thermostat thermostat)) {
             System.out.println("⚠️ This menu is only for Thermostats.");
             return;
         }
+
+        Scanner scanner = new Scanner(System.in); // ✅ now created dynamically per call
 
         while (true) {
             System.out.println("\n=== Thermostat Actions ===");

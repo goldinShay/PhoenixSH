@@ -7,9 +7,11 @@ import ui.AutoOpController;
 import java.util.Scanner;
 
 public class LightActionsMenu {
-    private static final Scanner scanner = new Scanner(System.in);
-
     public static void show(Device device) {
+        show(device, new Scanner(System.in)); // default user-facing behavior
+    }
+
+    public static void show(Device device, Scanner scanner) {
         if (!(device instanceof Light light)) {
             System.out.println("⚠️ This menu is only for basic Light devices.");
             return;
@@ -21,9 +23,8 @@ public class LightActionsMenu {
             System.out.println("Automation: " + (light.isAutomationEnabled() ? "ENABLED" : "DISABLED"));
             System.out.println("1 - Turn ON");
             System.out.println("2 - Turn OFF");
-            System.out.println("3 - AutoOp");
-            System.out.println("4 - Status");
-            System.out.println("5 - Back");
+            System.out.println("3 - AutoOp Settings");
+            System.out.println("4 - Back");
 
             System.out.print("Choose an option: ");
             String choice = scanner.nextLine().trim();
@@ -31,9 +32,8 @@ public class LightActionsMenu {
             switch (choice) {
                 case "1" -> light.turnOn();
                 case "2" -> light.turnOff();
-                case "3" -> AutoOpController.display(light);
-                case "4" -> light.status();
-                case "5" -> {
+                case "3" -> AutoOpController.display(light, scanner);
+                case "4" -> {
                     System.out.println("↩️ Back to device menu.");
                     return;
                 }

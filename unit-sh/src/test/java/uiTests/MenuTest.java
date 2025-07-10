@@ -73,7 +73,7 @@ class MenuTest {
         Sensor sensor = mock(Sensor.class);
         when(sensor.getSensorId()).thenReturn("S1");
         when(sensor.getSensorName()).thenReturn("Thermo");
-        when(sensor.getCurrentReading()).thenReturn(25);
+        when(sensor.getCurrentReading()).thenReturn(25.69);
         when(sensor.getUnit()).thenReturn("C");
 
         Map<String, Device> devices = new HashMap<>();
@@ -121,7 +121,7 @@ class MenuTest {
         Sensor sensor = mock(Sensor.class);
         when(sensor.getSensorId()).thenReturn("SENSE");
         when(sensor.getSensorName()).thenReturn("Hygrometer");
-        when(sensor.getCurrentReading()).thenReturn(55);
+        when(sensor.getCurrentReading()).thenReturn(55.69);
         when(sensor.getUnit()).thenReturn("%");
 
         Map<String, Sensor> sensors = Map.of("SENSE", sensor);

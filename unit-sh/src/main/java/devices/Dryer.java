@@ -3,7 +3,6 @@ package devices;
 import devices.actions.DeviceAction;
 import devices.actions.DryerAction;
 import storage.DeviceStorage;
-import utils.DeviceDefaults;
 
 import java.time.Clock;
 import java.util.List;

@@ -24,7 +24,7 @@ public class SensorTest {
         }
 
         @Override public int readCurrentValue() { return currentValue; }
-        @Override public int getCurrentReading() { return currentValue; }
+        @Override public double getCurrentReading() { return currentValue; }
 
         @Override public void simulateValue(int value) {
             this.currentValue = value;

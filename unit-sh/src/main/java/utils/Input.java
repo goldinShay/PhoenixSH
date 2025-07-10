@@ -3,7 +3,12 @@ package utils;
 import java.util.Scanner;
 
 public class Input {
-    private static final Scanner scanner = new Scanner(System.in);
+    private static Scanner scanner = new Scanner(System.in); // 🔓 no longer final
+
+    // ✅ Test-safe setter
+    public static void setScanner(Scanner newScanner) {
+        scanner = newScanner;
+    }
 
     public static int getInt(String prompt) {
         while (true) {

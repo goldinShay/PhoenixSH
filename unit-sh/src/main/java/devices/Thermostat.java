@@ -1,7 +1,6 @@
 package devices;
 
 import devices.actions.DeviceAction;
-import utils.DeviceDefaults;
 import utils.NotificationService;
 
 import java.time.Clock;
