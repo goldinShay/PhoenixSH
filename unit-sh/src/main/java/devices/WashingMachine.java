@@ -19,22 +19,15 @@ public class WashingMachine extends Device {
     // ─── 🏗 Constructors ───
 
     // Full constructor (with thresholds)
-    public WashingMachine(String id, String name, String brand, String model,
-                          Clock clock, double autoOnThreshold) {
-        super(id, name, DeviceType.WASHING_MACHINE, clock, autoOnThreshold, autoOnThreshold);
+    public WashingMachine(String id, String name, String brand, String model, Clock clock,
+                          boolean isOn, double autoOnThreshold, double autoOffThreshold,
+                          boolean skipIdCheck) {
+        super(id, name, DeviceType.WASHING_MACHINE, clock, autoOnThreshold, autoOffThreshold, skipIdCheck);
         this.brand = brand != null ? brand : "Unknown";
         this.model = model != null ? model : "Unknown";
+        setOn(isOn);
     }
 
-    // Convenience constructor (with defaults)
-    public WashingMachine(String id, String name, String brand, String model, Clock clock) {
-        this(id, name, brand, model, clock, DeviceDefaults.getDefaultAutoOn(DeviceType.WASHING_MACHINE));
-    }
-    public WashingMachine(String id, String name, Clock clock, boolean state, double autoOn, double autoOff) {
-        super(id, name, DeviceType.WASHING_MACHINE, clock, autoOn, autoOff);
-        this.brand = "Unknown";
-        this.model = "Unknown";
-    }
 
 
     // ─── ⚙ State Control ───

@@ -47,10 +47,12 @@ public abstract class Device implements Runnable {
 
     // 🏗 Constructor
     public Device(String deviceId, String name, DeviceType type, Clock clock,
-                  double autoOnThreshold, double autoOffThreshold) {
-        if (REGISTERED_IDS.contains(deviceId)) {
+                  double autoOnThreshold, double autoOffThreshold, boolean skipIdCheck) {
+
+        if (!skipIdCheck && REGISTERED_IDS.contains(deviceId)) {
             throw new IllegalArgumentException("❌ Device ID already in use: " + deviceId);
         }
+
         this.deviceId = deviceId;
         this.name = name;
         this.type = type;
@@ -59,8 +61,10 @@ public abstract class Device implements Runnable {
         this.autoOffThreshold = autoOffThreshold;
         this.addedTimestamp = ZonedDateTime.now(clock);
         this.updatedTimestamp = addedTimestamp;
+
         REGISTERED_IDS.add(deviceId);
     }
+
 
     // 🛠️ Identity Setters
     public void setId(String id) {

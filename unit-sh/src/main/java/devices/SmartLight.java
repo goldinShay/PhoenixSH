@@ -1,7 +1,8 @@
 package devices;
 
-import devices.actions.SmartLightEffect;
 import devices.actions.SmartLightAction;
+import devices.actions.SmartLightEffect;
+import devices.actions.SmartLightColorMode;
 
 import java.time.Clock;
 import java.util.HashMap;
@@ -13,69 +14,70 @@ public class SmartLight extends Device {
     private String brand;
     private String model;
     private SmartLightAction lightMode;
-    private int red = 100;
-    private int green = 100;
-    private int blue = 100;
-//    private Thread animationThread;
-//    private volatile boolean animationRunning;
+    private SmartLightColorMode colorMode = SmartLightColorMode.WARM_WHITE;
+    private int red = colorMode.getRed();
+    private int green = colorMode.getGreen();
+    private int blue = colorMode.getBlue();
     private SmartLightEffect currentEffect = SmartLightEffect.NONE;
 
-    public void applyColor(int r, int g, int b) {
-        this.red = r;
-        this.green = g;
-        this.blue = b;
-        // Future: push to hardware bridge or UI
-        System.out.printf("🌈 %s color set to RGB(%d, %d, %d)%n", getName(), r, g, b);
-    }
-
     // 🏗️ Constructor: full parameter set
-    public SmartLight(String deviceId, String name, String brand, String model, Clock clock, boolean isOn,
-                      double autoOnThreshold, double autoOffThreshold) {
-        super(deviceId, name, DeviceType.SMART_LIGHT, clock, autoOnThreshold, autoOffThreshold);
+    public SmartLight(String deviceId, String name, String brand, String model, Clock clock,
+                      boolean isOn, double autoOnThreshold, double autoOffThreshold, boolean skipIdCheck) {
+        super(deviceId, name, DeviceType.SMART_LIGHT, clock, autoOnThreshold, autoOffThreshold, skipIdCheck);
         this.brand = brand != null ? brand : "Unknown";
         this.model = model != null ? model : "Unknown";
         setOn(isOn);
 
+        setColorMode(SmartLightColorMode.WARM_WHITE);
+
         if (supportsCustomMode()) {
-            this.lightMode = new SmartLightAction(100, 100, 90, 80); // 📍 Default RGB mode
+            this.lightMode = new SmartLightAction("WARM_WHITE", 100, red, green, blue);
         }
     }
 
-    // 🏗️ Constructor: with default thresholds
+    // 🏗️ With default thresholds
     public SmartLight(String deviceId, String name, String brand, String model, Clock clock, boolean isOn) {
         this(deviceId, name, brand, model, clock, isOn,
                 DeviceDefaults.getDefaultAutoOn(DeviceType.SMART_LIGHT),
-                DeviceDefaults.getDefaultAutoOn(DeviceType.SMART_LIGHT)); // Mirror OFF
+                DeviceDefaults.getDefaultAutoOff(DeviceType.SMART_LIGHT),
+                false);
     }
-    public SmartLight(String deviceId, String name, Clock clock, boolean isOn,
-                      double autoOnThreshold, double autoOffThreshold) {
-        super(deviceId, name, DeviceType.SMART_LIGHT, clock, autoOnThreshold, autoOffThreshold);
-        setOn(isOn);
 
-        // Optional: set a default light mode
-        if (supportsCustomMode()) {
-            this.lightMode = new SmartLightAction(100, 100, 90, 80); // WARM_WHITE
+    // 🛠️ Minimal constructor
+    public SmartLight(String deviceId, String name, Clock clock,
+                      boolean isOn, double autoOnThreshold, double autoOffThreshold, boolean skipIdCheck) {
+        this(deviceId, name, null, null, clock, isOn, autoOnThreshold, autoOffThreshold, skipIdCheck);
+    }
+
+    // 🎨 Color + Mode Handling
+    public void applyColor(int r, int g, int b) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+
+        // 🌈 Detect preset or fallback to CUSTOM
+        this.colorMode = SmartLightColorMode.CUSTOM;
+        for (SmartLightColorMode mode : SmartLightColorMode.values()) {
+            if (mode.getRed() == r && mode.getGreen() == g && mode.getBlue() == b && !mode.isCustom()) {
+                this.colorMode = mode;
+                break;
+            }
         }
+
+        System.out.printf("🌈 %s color set to RGB(%d, %d, %d)%n", getName(), r, g, b);
     }
 
-
-    // 📝 Lightweight serialization
-    public String toDataString() {
-        return String.join("|", getType().name(), getId(), getName(), brand, model);
+    public void setColorMode(SmartLightColorMode mode) {
+        if (mode == null) return;
+        this.colorMode = mode;
+        applyColor(mode.getRed(), mode.getGreen(), mode.getBlue());
     }
 
-    public static SmartLight fromDataString(String[] parts, Clock clock) {
-        if (parts == null || parts.length < 5) {
-            throw new IllegalArgumentException("Invalid data string for SmartLight: " + String.join(", ", parts));
-        }
-        return new SmartLight(parts[1], parts[2], parts[3], parts[4], clock, false);
+    public SmartLightColorMode getColorMode() {
+        return colorMode;
     }
 
-    // 🟢 Capabilities
-    public boolean supportsCustomMode() {
-        return "Calex A60E27".equalsIgnoreCase(model);
-    }
-
+    // 💡 Mode Editor
     public void setLightMode(SmartLightAction mode) {
         if (!supportsCustomMode()) {
             System.out.println("⚠️ This model does not support custom RGB light modes.");
@@ -89,23 +91,17 @@ public class SmartLight extends Device {
         return lightMode;
     }
 
-    public String getModel() {
-        return model;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-    public SmartLightEffect getEffect() {
-        return currentEffect;
-    }
-
+    // 📝 Metadata
+    public String getModel() { return model; }
+    public String getBrand() { return brand; }
+    public SmartLightEffect getEffect() { return currentEffect; }
 
     // 🔁 Device behavior
     @Override
     public void turnOn() {
         super.setOn(true);
-        System.out.println("💡 SmartLight " + getName() + " turned ON.");
+        System.out.printf("💡 SmartLight '%s' turned ON with color mode [%s]%n",
+                getName(), colorMode.getLabel());
     }
 
     @Override
@@ -117,7 +113,7 @@ public class SmartLight extends Device {
     @Override
     public List<String> getAvailableActions() {
         return supportsCustomMode()
-                ? List.of("on", "off", "setMode", "status")
+                ? List.of("on", "off", "setMode", "status", "editRGB")
                 : List.of("on", "off", "status");
     }
 
@@ -138,14 +134,11 @@ public class SmartLight extends Device {
 
     @Override
     public String toString() {
-        return String.format("SmartLight{name='%s', model='%s', power=%s, mode=%s}",
+        return String.format("SmartLight{name='%s', model='%s', power=%s, colorMode=%s, effect=%s}",
                 getName(), model, isOn() ? "ON" : "OFF",
-                lightMode != null ? lightMode : "Default");
+                colorMode.getLabel(), currentEffect.name());
     }
-    public static Map<String, SmartLightAction> loadStaticModesFromExcel() {
-        // 🚧 TODO: Load from Excel
-        return new HashMap<>();
-    }
+
     public void applyEffect(SmartLightEffect effect) {
         if (!supportsCustomMode()) {
             System.out.println("⚠️ This model does not support animated effects.");
@@ -156,4 +149,25 @@ public class SmartLight extends Device {
         System.out.println("🌠 Animation set to: " + this.currentEffect.name());
     }
 
+    public boolean supportsCustomMode() {
+        return "Calex A60E27".equalsIgnoreCase(model);
+    }
+
+    public static Map<String, SmartLightAction> loadStaticModesFromExcel() {
+        return new HashMap<>();
+    }
+
+    public String toDataString() {
+        return String.join("|", getType().name(), getId(), getName(), brand, model, colorMode.getLabel());
+    }
+
+    public static SmartLight fromDataString(String[] parts, Clock clock) {
+        if (parts == null || parts.length < 6) {
+            throw new IllegalArgumentException("Invalid data string for SmartLight: " + String.join(", ", parts));
+        }
+
+        SmartLight light = new SmartLight(parts[1], parts[2], parts[3], parts[4], clock, false);
+        light.setColorMode(SmartLightColorMode.fromLabel(parts[5]));
+        return light;
+    }
 }

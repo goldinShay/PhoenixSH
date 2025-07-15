@@ -8,13 +8,12 @@ import storage.xlc.XlWorkbookUtils;
 import ui.Menu;
 import ui.gui.MainWindow;
 import utils.AutoOpManager;
+import utils.DeviceIdManager;
 import utils.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class SmartHomeSystem {
 
@@ -25,19 +24,15 @@ public class SmartHomeSystem {
 
         System.out.println("📂 Initializing Smart Home System...");
 
-        if (!ensureExcelFileExists(guiMode)) {
-            return; // Startup aborted or failed
-        }
-
-        initializeSystem();
-
         if (guiMode) {
+            initializeSystem(); // 👈 Add this line
             launchGui();
-            new Thread(SmartHomeSystem::launchCli).start(); // CLI runs in parallel
+            new Thread(SmartHomeSystem::launchCli).start();
         } else {
+            if (!ensureExcelFileExists(false)) return;
+            initializeSystem();
             launchCli();
         }
-
     }
 
 
@@ -90,10 +85,28 @@ public class SmartHomeSystem {
 
         Map<String, Device> devices = DeviceStorage.getDevices();
         Map<String, Sensor> sensors = SensorStorage.getSensors();
-        XlCreator.loadSensorLinks(devices, sensors);
 
-        AutoOpManager.restoreMemoryLinks(); // Load persisted sensor-device connections
+        DeviceIdManager idManager = DeviceIdManager.getInstance();
+
+        // 🧠 Feed both device and sensor IDs into the manager
+        List<String> deviceIds = devices.values().stream()
+                .map(Device::getId)
+                .toList();
+
+        List<String> sensorIds = sensors.values().stream()
+                .map(Sensor::getSensorId)
+                .toList();
+
+        idManager.addKnownIds(deviceIds);
+        idManager.addKnownIds(sensorIds);
+
+        System.out.println("🆔 DeviceIdManager initialized with " +
+                (deviceIds.size() + sensorIds.size()) + " total known IDs.");
+
+        XlCreator.loadSensorLinks(devices, sensors);
+        AutoOpManager.restoreMemoryLinks();
     }
+
 
     private static void linkDevicesAndSensors() {
         relinkSlavesToSensors();

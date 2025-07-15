@@ -1,37 +1,36 @@
 package devices;
 
+import utils.Log;
+
 public enum DeviceType {
+    UNKNOWN("Unknown"),
+    LIGHT("Light"),
+    SMART_LIGHT("Smart Light"),
+    THERMOSTAT("Thermostat"),
+    WASHING_MACHINE("Washing Machine"),
+    DRYER("Dryer"),
+    SENSOR("Sensor");
 
-    UNKNOWN,
-    LIGHT,
-    SMART_LIGHT,
-    THERMOSTAT,
-    WASHING_MACHINE,
-    DRYER,
-    SENSOR;
+    private final String label;
 
-    public static DeviceType fromString(String input) {
-        try {
-            return DeviceType.valueOf(input.trim().toUpperCase());  // 🔥 Guarantees uppercase
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("❌ Unsupported device type: " + input);
-        }
+    DeviceType(String label) {
+        this.label = label;
     }
-    // ✅ Checks if a string matches any valid DeviceType
-    public static boolean isValidType(String type) {
-        for (DeviceType dt : values()) {
-            if (dt.name().equalsIgnoreCase(type)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-
 
     @Override
     public String toString() {
-        return name();
+        return label;
     }
+    public static DeviceType fromString(String typeString) {
+        if (typeString == null || typeString.isBlank()) return DeviceType.UNKNOWN;
+
+        try {
+            return DeviceType.valueOf(typeString.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            Log.warn("🚫 Unknown DeviceType received: '" + typeString + "'");
+            return DeviceType.UNKNOWN;
+        }
+    }
+
 }
+

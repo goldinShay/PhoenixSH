@@ -40,7 +40,7 @@ public class XlSensorManager {
                     int value = (int) Double.parseDouble(getCellValue(row, 4));
 
                     SensorType type = SensorType.valueOf(typeStr.toUpperCase());
-                    Sensor sensor = SensorFactory.createSensor(type, id, name, unit, value, clock);
+                    Sensor sensor = SensorFactory.createSensor(type, id, name, clock);
 
                     loadedSensors.put(id, sensor);
                 } catch (Exception e) {

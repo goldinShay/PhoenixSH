@@ -6,10 +6,11 @@ import java.util.List;
 public class GenericDevice extends Device {
 
     // ─── Constructor ───
-    public GenericDevice(String id, String name, DeviceType type, Clock clock) {
+    public GenericDevice(String id, String name, DeviceType type, Clock clock, boolean skipIdCheck) {
         super(id, name, type, clock,
                 DeviceDefaults.getDefaultAutoOn(type),
-                DeviceDefaults.getDefaultAutoOn(type)); // Mirror OFF
+                DeviceDefaults.getDefaultAutoOn(type), // Mirror OFF
+                skipIdCheck);
     }
 
     // ─── Available actions ───

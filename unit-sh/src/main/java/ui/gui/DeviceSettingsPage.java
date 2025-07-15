@@ -2,8 +2,6 @@ package ui.gui;
 
 import javax.swing.*;
 import java.awt.*;
-import ui.gui.DeviceSettingsPage;
-
 
 public class DeviceSettingsPage extends JPanel {
     public static final int PAGE_NUMBER = 100;
@@ -17,11 +15,11 @@ public class DeviceSettingsPage extends JPanel {
         displayPanel.setBackground(Color.BLACK);
         displayPanel.setPreferredSize(new Dimension(800, 120));
         displayPanel.setLayout(new GridLayout(1, 1));
-        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Device Display",
+        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Device Settings", //<-- Menu page name
                 0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
-        JLabel placeholder = new JLabel("📟 Device summary display...", JLabel.CENTER);
-        placeholder.setForeground(Color.GREEN);
+        JLabel placeholder = new JLabel("📟 Devices and Sensors Registry", JLabel.CENTER);
+        placeholder.setForeground(Color.LIGHT_GRAY);
         placeholder.setFont(new Font("Monospaced", Font.BOLD, 16));
         displayPanel.add(placeholder);
 
@@ -34,8 +32,10 @@ public class DeviceSettingsPage extends JPanel {
         Dimension squareSize = new Dimension(180, 180);
 
         JButton addBtn = createMainButton("<html><center>ADD<br>Device</center></html>");
+        addBtn.addActionListener(e -> PageNavigator.goToPage(110)); // 🚀 Redirect to AddDeviceMenuPage
         JButton updateBtn = createMainButton("<html><center>UPDATE<br>Device</center></html>");
-        JButton removeBtn = createMainButton("<html><center>REMOVE<br>DEVICE</center></html>");
+        updateBtn.addActionListener(e -> PageNavigator.goToPage(112)); // 🧭 Go to update category selector
+        JButton removeBtn = createMainButton("<html><center>REMOVE<br>Device</center></html>");
 
         for (JButton btn : java.util.List.of(addBtn, updateBtn, removeBtn)) {
             btn.setPreferredSize(squareSize);
@@ -58,15 +58,23 @@ public class DeviceSettingsPage extends JPanel {
         footer.setBackground(Color.BLACK);
         footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
 
-        JLabel pageLabel = new JLabel(String.format("Page: %03d - Device Settings", PAGE_NUMBER));
+        JLabel pageLabel = new JLabel(String.format("Page %03d", PAGE_NUMBER));
         pageLabel.setForeground(Color.GREEN);
+        pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
-        JButton homeBtn = new JButton("🏠 Home");
+// ➕ Optional back button if needed later
+        JPanel navButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        navButtonPanel.setBackground(Color.BLACK);
+
+        JButton homeBtn = new JButton("Home");
         homeBtn.setFont(new Font("Arial", Font.PLAIN, 12));
-        // TODO: add action listener to switch page here
+        homeBtn.addActionListener(e -> PageNavigator.goToPage(50));
+
+        navButtonPanel.add(homeBtn);
 
         footer.add(pageLabel, BorderLayout.WEST);
-        footer.add(homeBtn, BorderLayout.EAST);
+        footer.add(navButtonPanel, BorderLayout.EAST);
+
 
         // === Layout All ===
         add(displayPanel, BorderLayout.NORTH);

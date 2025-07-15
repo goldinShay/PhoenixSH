@@ -2,6 +2,7 @@ package storage;
 
 import sensors.Sensor;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,5 +52,21 @@ public class SensorStorage {
             System.out.println("⚠️ No sensor data found in Excel.");
         }
     }
+    public static void register(Sensor sensor) {
+        if (sensor == null || sensor.getSensorId() == null) {
+            System.err.println("❌ Invalid sensor or missing ID.");
+            return;
+        }
+        sensors.put(sensor.getSensorId(), sensor);
+    }
+    public static boolean isNameTaken(String name) {
+        if (name == null) return false;
+        return sensors.values().stream()
+                .anyMatch(sensor -> sensor.getSensorName().equalsIgnoreCase(name.trim()));
+    }
+    public static Collection<Sensor> getAll() {
+        return sensors.values();
+    }
+
 
 }

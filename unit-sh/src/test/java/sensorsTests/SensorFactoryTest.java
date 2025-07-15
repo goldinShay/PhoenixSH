@@ -43,8 +43,6 @@ public class SensorFactoryTest {
                 "light",
                 "S02",
                 "KitchenSensor",
-                "lux",
-                200,
                 testClock
         );
 
@@ -56,7 +54,7 @@ public class SensorFactoryTest {
     @Test
     void createSensorByType_withInvalidType_shouldThrowException() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            SensorFactory.createSensorByType("TEMPEST", "S03", "FailSensor", "n/a", 999, testClock);
+            SensorFactory.createSensorByType("TEMPEST", "S03", "FailSensor", testClock);
         });
 
         assertTrue(exception.getMessage().contains("Invalid or unsupported sensor type"));

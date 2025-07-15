@@ -2,6 +2,8 @@ package ui.gui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class WelcomeMenuPage extends JPanel {
     public static final int PAGE_NUMBER = 50;
@@ -10,16 +12,32 @@ public class WelcomeMenuPage extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.DARK_GRAY);
 
-        // Top simulated LCD
-        JPanel lcdPanel = new JPanel(new GridLayout(3, 1));
-        lcdPanel.setBackground(Color.BLACK);
-        lcdPanel.setPreferredSize(new Dimension(800, 120));
+        // === Top Display Area (LCD-style) ===
+        JPanel displayPanel = new JPanel();
+        displayPanel.setBackground(Color.BLACK);
+        displayPanel.setPreferredSize(new Dimension(800, 120));
+        displayPanel.setLayout(null); // Absolute layout for custom placement
+        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Welcome Menu",
+                0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
-        lcdPanel.add(buildLCDRow("Welcome to:", JLabel.CENTER, Color.LIGHT_GRAY));
-        lcdPanel.add(buildLCDRow("PhoenixSH", JLabel.CENTER, Color.WHITE));
-        lcdPanel.add(buildLCDRow("V - 1.0", JLabel.CENTER, Color.GRAY));
+        // 🕓 Timestamp at top-left
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy_HH:mm");
+        String timestamp = formatter.format(LocalDateTime.now());
 
-        // Center buttons
+        JLabel timeLabel = new JLabel(timestamp);
+        timeLabel.setForeground(Color.GRAY);
+        timeLabel.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        timeLabel.setBounds(10, 12, 200, 20); // Position near top-left
+        displayPanel.add(timeLabel);
+
+        // 📟 Main label centered
+        JLabel titleLabel = new JLabel("📟 Welcome to PhoenixSH — V 1.0", JLabel.CENTER);
+        titleLabel.setForeground(Color.LIGHT_GRAY);
+        titleLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
+        titleLabel.setBounds(0, 40, 800, 40); // Horizontally centered
+        displayPanel.add(titleLabel);
+
+        // === Center Control Buttons ===
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.X_AXIS));
         centerPanel.setBackground(Color.DARK_GRAY);
@@ -39,13 +57,8 @@ public class WelcomeMenuPage extends JPanel {
             btn.setVerticalAlignment(SwingConstants.CENTER);
         }
 
-        // 💡 Hook b1 to DeviceSettingsPage
-        b1.addActionListener(e -> {
-            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            topFrame.setContentPane(new DeviceSettingsPage());
-            topFrame.revalidate();
-            topFrame.repaint();
-        });
+        b1.addActionListener(e -> PageNavigator.goToPage(100));
+        b2.addActionListener(e -> PageNavigator.goToPage(200));
 
         centerPanel.add(Box.createHorizontalGlue());
         centerPanel.add(b1);
@@ -55,32 +68,33 @@ public class WelcomeMenuPage extends JPanel {
         centerPanel.add(b3);
         centerPanel.add(Box.createHorizontalGlue());
 
-        // Footer
+        // === Footer ===
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.BLACK);
         footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
 
-        JLabel pageLabel = new JLabel(String.format("Page: %03d - Welcome Menu", PAGE_NUMBER));
+        JLabel pageLabel = new JLabel(String.format("Page %03d", PAGE_NUMBER));
         pageLabel.setForeground(Color.GREEN);
+        pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
-        JButton settingsBtn = new JButton("⚙️ Settings");
+        JPanel navButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        navButtonPanel.setBackground(Color.BLACK);
+
+        JButton settingsBtn = new JButton("Setup");
         settingsBtn.setFont(new Font("Arial", Font.PLAIN, 12));
+// You can add a navigation action here if needed
+// settingsBtn.addActionListener(e -> PageNavigator.goToPage(X));
+
+        navButtonPanel.add(settingsBtn);
 
         footer.add(pageLabel, BorderLayout.WEST);
-        footer.add(settingsBtn, BorderLayout.EAST);
+        footer.add(navButtonPanel, BorderLayout.EAST);
 
-        // Layout
-        add(lcdPanel, BorderLayout.NORTH);
+
+        // === Final Assembly ===
+        add(displayPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);
-    }
-
-    private JLabel buildLCDRow(String text, int alignment, Color color) {
-        JLabel label = new JLabel(text, alignment);
-        label.setForeground(color);
-        label.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        label.setBackground(Color.BLACK);
-        return label;
     }
 
     private JButton createMainButton(String text) {

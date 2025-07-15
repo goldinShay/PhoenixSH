@@ -7,18 +7,20 @@ public class Light extends Device {
 
     // 🏗️ Constructor: full parameter set
     public Light(String deviceId, String name, Clock clock, boolean isOn,
-                 double autoOnThreshold, double autoOffThreshold) {
-        super(deviceId, name, DeviceType.LIGHT, clock, autoOnThreshold, autoOffThreshold);
+                 double autoOnThreshold, double autoOffThreshold, boolean skipIdCheck) {
+        super(deviceId, name, DeviceType.LIGHT, clock, autoOnThreshold, autoOffThreshold, skipIdCheck);
         setOn(isOn);
     }
+
 
     // 🏗️ Constructor: uses default thresholds
     public Light(String deviceId, String name, Clock clock, boolean isOn) {
         super(deviceId, name, DeviceType.LIGHT, clock,
                 DeviceDefaults.getDefaultAutoOn(DeviceType.LIGHT),
-                DeviceDefaults.getDefaultAutoOn(DeviceType.LIGHT)); // Mirror OFF
+                DeviceDefaults.getDefaultAutoOn(DeviceType.LIGHT), false); // strict mode
         setOn(isOn);
     }
+
 
     // 📝 Lightweight serialization
     public String toDataString() {

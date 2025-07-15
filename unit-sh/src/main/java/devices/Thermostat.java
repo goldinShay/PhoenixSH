@@ -16,17 +16,15 @@ public class Thermostat extends Device {
 
     // ─── 🧱 Construction ───
     public Thermostat(String id, String name, double userTemp,
-                      NotificationService notificationService, Clock clock) {
+                      NotificationService notificationService,
+                      Clock clock, boolean skipIdCheck) {
         super(id, name, DeviceType.THERMOSTAT, clock,
                 DeviceDefaults.getDefaultAutoOn(DeviceType.THERMOSTAT),
-                DeviceDefaults.getDefaultAutoOn(DeviceType.THERMOSTAT)); // mirror OFF
+                DeviceDefaults.getDefaultAutoOn(DeviceType.THERMOSTAT),
+                skipIdCheck);
+
         this.userTemp = userTemp;
         this.notificationService = notificationService;
-    }
-    public Thermostat(String id, String name, Clock clock, boolean state, double autoOn, double autoOff) {
-        super(id, name, DeviceType.THERMOSTAT, clock, autoOn, autoOff);
-        this.notificationService = null;
-        this.userTemp = DEFAULT_USER_TEMP;
     }
 
 
@@ -99,23 +97,6 @@ public class Thermostat extends Device {
         } catch (IllegalArgumentException e) {
             System.out.printf("❌ Invalid action: '%s'%n", action);
         }
-    }
-
-    // ─── 📦 Persistence ───
-    public String toDataString() {
-        return String.join("|", getType().name(), getId(), getName(), String.valueOf(userTemp));
-    }
-
-    public static Thermostat fromDataString(String[] parts, NotificationService ns, Clock clock) {
-        if (parts.length < 4) {
-            throw new IllegalArgumentException("Invalid Thermostat data: " + String.join("|", parts));
-        }
-
-        String id = parts[1];
-        String name = parts[2];
-        double userTemp = Double.parseDouble(parts[3]);
-
-        return new Thermostat(id, name, userTemp, ns, clock);
     }
 
     @Override

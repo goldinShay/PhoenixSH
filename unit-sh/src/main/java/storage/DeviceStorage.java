@@ -69,4 +69,34 @@ public class DeviceStorage {
     public static List<Thread> getDeviceThreads() {
         return deviceThreads;
     }
+
+    public static void add(Device device) {
+        devices.put(device.getId(), device);
+    }
+    // 📥 Refresh all devices from Excel mid-session
+    public static void reloadFromExcel() {
+        List<Device> loadedDevices = XlCreator.loadDevicesFromExcel();
+        if (loadedDevices == null || loadedDevices.isEmpty()) {
+            System.err.println("⚠️ Excel reload returned no devices. Skipping overwrite.");
+            return;
+        }
+
+        Map<String, Device> tempMap = new HashMap<>();
+        for (Device device : loadedDevices) {
+            if (device != null && device.getId() != null) {
+                tempMap.put(device.getId(), device);
+            }
+        }
+
+        if (tempMap.isEmpty()) {
+            System.err.println("⚠️ Reload aborted: No valid devices found in Excel.");
+            return;
+        }
+
+        devices.clear();
+        devices.putAll(tempMap);
+        System.out.println("🔁 DeviceStorage safely reloaded from Excel with " + devices.size() + " device(s).");
+    }
+
+
 }

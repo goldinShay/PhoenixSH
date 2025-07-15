@@ -1,6 +1,8 @@
 package sensors;
 
 import devices.Device;
+import utils.Log;
+
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;

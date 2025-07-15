@@ -1,34 +1,44 @@
 package scheduler;
 
 import devices.Device;
+import storage.xlc.sheetsCommand.ScheduledTasksCommand;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-/**
- * Represents a task scheduled to perform an action on a device at a specific time,
- * with optional repeat intervals (e.g., daily, weekly, monthly, or none).
- */
 public class ScheduledTask {
+    private List<ScheduledTask> scheduledTasks = new ArrayList<>();
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm");
 
+    private String taskId;
     private Device device;
     private String action;
     private LocalDateTime time;
-    private String repeat; // Options: "daily", "weekly", "monthly", "none" (case-insensitive)
+    private String repeat; // "daily", "weekly", etc.
 
-    public ScheduledTask(Device device, String action, LocalDateTime time, String repeat) {
+    public ScheduledTask(String taskId, Device device, String action, LocalDateTime time, String repeat) {
+        this.taskId = taskId;
         this.device = device;
         this.action = action;
         this.time = time;
         this.repeat = repeat != null ? repeat.toLowerCase() : "none";
     }
 
-    public static void scheduleDevicePower() {
+    public ScheduledTask(Device device, String action, LocalDateTime time, String repeat) {
+        this("TS-UNASSIGNED", device, action, time, repeat);
     }
 
+
     // Getters
+    public String getTaskId() {
+        return taskId;
+    }
+
     public Device getDevice() {
         return device;
     }
@@ -46,6 +56,10 @@ public class ScheduledTask {
     }
 
     // Setters
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
     public void setDevice(Device device) {
         this.device = device;
     }
@@ -63,20 +77,26 @@ public class ScheduledTask {
     }
 
     /**
-     * Returns a human-readable summary for printing in logs.
+     * Convert to row representation using enum-backed column order
      */
+    public String[] toExcelRow() {
+        return new String[] {
+                taskId,
+                device.getId(),
+                action,
+                FORMATTER.format(time),
+                repeat
+        };
+    }
+
     @Override
     public String toString() {
         return "[" + time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "] "
                 + device.getName() + " - " + action + " (Repeat: " + repeat + ")";
     }
 
-    /**
-     * Returns a file-friendly version (e.g., for saving to text file).
-     */
     public String toFileString() {
-        return device.getId() + "|" + device.getName() + "|" + action + "|" +
-                time.format(FORMATTER) + "|" + repeat;
+        return taskId + "|" + device.getId() + "|" + action + "|" + FORMATTER.format(time) + "|" + repeat;
     }
 
     @Override
@@ -84,14 +104,22 @@ public class ScheduledTask {
         if (this == o) return true;
         if (!(o instanceof ScheduledTask)) return false;
         ScheduledTask that = (ScheduledTask) o;
-        return Objects.equals(device.getId(), that.device.getId()) &&
-                Objects.equals(action, that.action) &&
-                Objects.equals(time, that.time) &&
-                Objects.equals(repeat, that.repeat);
+        return Objects.equals(taskId, that.taskId)
+                && Objects.equals(device.getId(), that.device.getId())
+                && Objects.equals(action, that.action)
+                && Objects.equals(time, that.time)
+                && Objects.equals(repeat, that.repeat);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(device.getId(), action, time, repeat);
+        return Objects.hash(taskId, device.getId(), action, time, repeat);
     }
+    public Set<String> getExistingTaskIds() {
+        return scheduledTasks.stream()
+                .map(ScheduledTask::getTaskId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
 }

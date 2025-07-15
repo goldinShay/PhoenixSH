@@ -52,7 +52,7 @@ public class AddSensorMenu {
 
         // 5️⃣ Create and store the sensor
         try {
-            Sensor sensor = SensorFactory.createSensor(sensorType, id, name, unit.getDisplay(), defaultValue, clock);
+            Sensor sensor = SensorFactory.createSensor(sensorType, id, name, clock);
             SensorStorage.getSensors().put(id, sensor);
             XlCreator.writeSensorToExcel(sensor);
             System.out.printf("✅ Sensor '%s' (%s) created successfully!%n", name, id);

@@ -60,7 +60,11 @@ public class AddDeviceMenu {
                 return;
             }
 
-            Set<String> existingIds = new HashSet<>(DeviceStorage.getDevices().keySet());
+            Map<String, Device> storedDevices = DeviceStorage.getDevices();
+            if (!storedDevices.isEmpty()) {
+                utils.DeviceIdManager.getInstance().setExistingDevices(new ArrayList<>(storedDevices.values()));
+            }
+            System.out.println("📋 Known IDs before generation: " + devices.keySet());
             String id = utils.DeviceIdManager.getInstance().generateIdForType(selectedType);
 
             Device newDevice = DeviceFactory.createDevice(

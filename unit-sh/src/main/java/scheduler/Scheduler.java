@@ -5,12 +5,15 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import sensors.Sensor;
 import storage.DeviceStorage;
+import storage.xlc.XlDeviceManager;
 import utils.Log;
 
 import java.io.*;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Scheduler {
 
@@ -19,6 +22,7 @@ public class Scheduler {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final long CHECK_INTERVAL_MS = 30 * 1000;
     private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
+    private final Clock clock = utils.ClockUtil.getClock();
     private Timer schedulerTimer;
     private static final boolean DEBUG_MODE = false; // change to true when needed
 
@@ -35,11 +39,13 @@ public class Scheduler {
 
     // 🔹 Schedules a new task and saves it to Excel
     public void scheduleTask(Device device, String action, LocalDateTime time, String repeat) {
-        ScheduledTask task = new ScheduledTask(device, action, time, repeat);
+        String taskId = XlDeviceManager.getNextAvailableId("TS", getExistingTaskIds());
+        ScheduledTask task = new ScheduledTask(taskId, device, action, time, repeat);
         scheduledTasks.add(task);
         saveTasksToExcel();
         System.out.println("✅ Task scheduled: " + task);
     }
+
 
     // 🔹 Removes a task and updates the Excel file
     public void removeTask(int index) {
@@ -253,7 +259,21 @@ public class Scheduler {
 
         saveTasksToExcel();  // ✅ Persist changes to ensure full system synchronization
     }
-
+    private Set<String> getExistingTaskIds() {
+        return scheduledTasks.stream()
+                .map(ScheduledTask::getTaskId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }public void printTaskQueue() {
+        if (scheduledTasks.isEmpty()) {
+            System.out.println("📭 No scheduled tasks.");
+        } else {
+            System.out.println("🗓️ Scheduled Task Queue:");
+            for (ScheduledTask task : scheduledTasks) {
+                System.out.println("• " + task);
+            }
+        }
+    }
 
 
 }

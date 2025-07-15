@@ -2,7 +2,9 @@ package storage.xlc;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import utils.Log;
 
+import javax.swing.*;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,38 +87,64 @@ public class XlWorkbookUtils {
 
         if (!file.exists()) {
             System.out.println("⚠️ Excel file not found at: " + getFilePath());
-            System.out.print("Do you want to create a new Excel file now? (Y/N): ");
 
-            Scanner scanner = new Scanner(System.in);
-            String input = scanner.nextLine().trim();
+            int choice = JOptionPane.showConfirmDialog(
+                    null,
+                    "Excel file not found:\n" + getFilePath() + "\n\nWould you like to create a new file?",
+                    "Missing Excel File",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
 
-            if (input.equalsIgnoreCase("Y")) {
-                try {
-                    Workbook workbook = new XSSFWorkbook();
-                    createSheetWithHeaders(workbook, "Scheduled Tasks", "TaskID", "DeviceID", "Action", "Time");
-                    createSheetWithHeaders(workbook, "Devices", "Type", "ID", "Name", "Brand", "Model", "AutoEnabled", "AutoOn", "AutoOff", "RGB_R", "RGB_G", "RGB_B", "ACTIVE_MODE");
-                    createSheetWithHeaders(workbook, "Sensors", "SensorID", "Name", "Type", "CurrentValue");
-                    createSheetWithHeaders(workbook, "Sense_Control", "SensorID", "SlaveDeviceID");
-                    createSheetWithHeaders(workbook, SMART_LIGHT_SHEET, SMART_LIGHT_HEADERS);
+            if (choice != JOptionPane.YES_OPTION) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        "Smart Home System cannot start without an Excel file.\nStartup aborted.",
+                        "Startup Failed",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return false;
+            }
 
-                    try (FileOutputStream fos = new FileOutputStream(file)) {
-                        workbook.write(fos);
-                    }
-                    workbook.close();
-                    System.out.println("✅ New Excel file created.");
-                    return true;
-                } catch (IOException e) {
-                    System.err.println("❌ Failed to create Excel file: " + e.getMessage());
-                    return false;
+            try {
+                Workbook workbook = new XSSFWorkbook();
+
+                createSheetWithHeaders(workbook, "Scheduled Tasks", "TaskID", "DeviceID", "Action", "Time");
+                createSheetWithHeaders(workbook, "Devices",
+                        "Type", "ID", "Name", "Brand", "Model", "AutoEnabled",
+                        "AutoOn", "AutoOff", "Actions", "ADDED_TS", "UPDATED_TS", "REMOVED_TS",
+                        "RGB_R", "RGB_G", "RGB_B", "ACTIVE_MODE");
+                createSheetWithHeaders(workbook, "Sensors", "SensorID", "Name", "Type", "CurrentValue");
+                createSheetWithHeaders(workbook, "Sense_Control", "SensorID", "SlaveDeviceID");
+                createSheetWithHeaders(workbook, SMART_LIGHT_SHEET, SMART_LIGHT_HEADERS);
+
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    workbook.write(fos);
                 }
-            } else {
-                System.out.println("🛑 Startup aborted by user.");
+                workbook.close();
+
+                JOptionPane.showMessageDialog(
+                        null,
+                        "✅ New Excel file successfully created:\n" + getFilePath(),
+                        "File Created",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                return true;
+
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        "❌ Failed to create Excel file:\n" + e.getMessage(),
+                        "Creation Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
                 return false;
             }
         }
 
         return true;
     }
+
 
     public static Workbook getWorkbook(String path) throws IOException {
         File file = new File(path);
@@ -173,4 +201,19 @@ public class XlWorkbookUtils {
             return false;
         }
     }
+    public static double getSafeNumeric(Cell cell, double fallback) {
+        if (cell == null) return fallback;
+
+        try {
+            return switch (cell.getCellType()) {
+                case NUMERIC -> cell.getNumericCellValue();
+                case STRING -> Double.parseDouble(cell.getStringCellValue().trim());
+                default -> fallback;
+            };
+        } catch (Exception ex) {
+            Log.warn("⚠️ Could not parse cell value to double: " + ex.getMessage());
+            return fallback;
+        }
+    }
+
 }

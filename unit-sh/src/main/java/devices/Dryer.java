@@ -19,19 +19,14 @@ public class Dryer extends Device {
 
     // ─── Constructors ───
 
-    public Dryer(String id, String name, String brand, String model, Clock clock) {
-        super(id, name, DeviceType.DRYER, clock,
-                DeviceDefaults.getDefaultAutoOn(DeviceType.DRYER),
-                DeviceDefaults.getDefaultAutoOn(DeviceType.DRYER)); // Mirror OFF
+    public Dryer(String id, String name, String brand, String model, Clock clock,
+                 boolean isOn, double autoOnThreshold, double autoOffThreshold,
+                 boolean skipIdCheck) {
+        super(id, name, DeviceType.DRYER, clock, autoOnThreshold, autoOffThreshold, skipIdCheck);
         this.brand = brand != null ? brand : DEFAULT_BRAND;
         this.model = model != null ? model : DEFAULT_MODEL;
+        setOn(isOn);
     }
-    public Dryer(String id, String name, Clock clock, boolean state, double autoOn, double autoOff) {
-        super(id, name, DeviceType.DRYER, clock, autoOn, autoOff);
-        this.brand = "Unknown";
-        this.model = "Unknown";
-    }
-
 
     // ─── Runtime State ───
 
@@ -108,16 +103,6 @@ public class Dryer extends Device {
                 brand,
                 model,
                 String.valueOf(running));
-    }
-
-    public static Dryer fromDataString(String[] parts, Clock clock) {
-        if (parts.length < 6) {
-            throw new IllegalArgumentException("Invalid Dryer data: " + String.join(", ", parts));
-        }
-
-        Dryer dryer = new Dryer(parts[1], parts[2], parts[3], parts[4], clock);
-        dryer.running = Boolean.parseBoolean(parts[5]);
-        return dryer;
     }
 
     @Override

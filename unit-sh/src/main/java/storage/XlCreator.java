@@ -26,16 +26,6 @@ public class XlCreator {
     public static void setDeviceUpdater(Function<Device, Boolean> f) { deviceUpdater = f; }
     public static void setDeviceRemover(Function<String, Boolean> f) { deviceRemover = f; }
     public static void setSensorUpdater(Function<Sensor, Boolean> f) { sensorUpdater = f; }
-    public static void setSenseAppender(Function<DeviceSensorPair, Boolean> f) { senseAppender = f; }
-    public static void setSenseRemover(Function<String, Boolean> f) { senseRemover = f; }
-
-    public static void resetHooks() {
-        deviceUpdater = null;
-        deviceRemover = null;
-        sensorUpdater = null;
-        senseAppender = null;
-        senseRemover = null;
-    }
 
     // ----- Device Delegates -----
     public static List<Device> loadDevicesFromExcel() {
@@ -54,10 +44,6 @@ public class XlCreator {
     public static boolean removeDevice(String deviceId) {
         return (deviceRemover != null) ? deviceRemover.apply(deviceId)
                 : deviceManager.removeDevice(deviceId);
-    }
-
-    public static String getNextAvailableId(String prefix, Set<String> existingIds) {
-        return deviceManager.getNextAvailableId(prefix, existingIds);
     }
 
     // ----- Sensor Delegates -----
@@ -97,23 +83,6 @@ public class XlCreator {
         senseControlManager.loadSensorLinksFromExcel(devices, sensors);
     }
 
-    // ----- Scheduler Delegates -----
-    public static List<Map<String, String>> viewTasks() {
-        return schedulerManager.loadTasks();
-    }
-
-    public static boolean addTask(String deviceId, String name, String action, String when, String repeat) {
-        return schedulerManager.addTask(deviceId, name, action, when, repeat);
-    }
-
-    public static boolean updateTask(String deviceId, String newWhen, String newRepeat) {
-        return schedulerManager.updateTask(deviceId, newWhen, newRepeat);
-    }
-
-    public static boolean deleteTask(String deviceId) {
-        return schedulerManager.deleteTask(deviceId);
-    }
-
     public static boolean removeSensorLink(String slaveId) {
         return XlSenseControlManager.removeSensorLink(slaveId);
     }
@@ -131,11 +100,5 @@ public class XlCreator {
             this.slave = slave;
             this.master = master;
         }
-    }
-
-    // 🔌 Interface for dependency injection if needed externally
-    public interface DevicePersistence {
-        boolean updateDevice(Device device);
-        boolean removeSensorLink(String deviceId);
     }
 }
