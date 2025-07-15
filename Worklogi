@@ -1,0 +1,69 @@
+To init IJ: home/nira/work/intellij/ideaIC-2022.3/idea-IC-223.7571.182/bin/idea.sh
+GitHub username: goldinShay
+NOT your usual
+
+//Link project to github:
+git remote add origin https://github.com/goldinShay/unit-sh.git
+
+git push https://goldinShay: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@github.com/goldinShay/unit-sh.git
+
+
+**************
+device: Name
+        Type: Sensor, Door-Cam, Parking-cam, garage door motor, Lights, Heater, Stove, dish washer, washing machine, Dryer, iRobot, Current sensor/meter, Ceiling-fan (Updatable)
+        Version (Updatable)
+        Actions (Updatable)
+        Output Target (Updatable)
+        Output Units
+        
+Main menu: Devices List, Add, Update, Remove
+	   Display device outputs All, by ID (Name) device status 
+	   Schedule Veiw, Add, Edit, Remove
+        
+I would like to add, update and remove my smart devices (think about lights, thermostats, etc) so my system is always up to date.
+I would like a dashboard that displays the status and sensor readings of these devices in real time, so I can monitor them
+I would like to be able to schedule tasks, so my home can operate automatically when Im not around
+I would like to receive notifications, for example when a device detects abnormal readings 
+
+It would be handy if each devives stimulates its behavior on its own thread, showcasing mutli- threading
+
+
+Thermostat - Home heater controller on/off notifications on thresholds and temp read every 60 sec
+*MISSING SENSORS: Temp, Light, Noise, smoke, volumetric (Updatable)
+
+**********************add a reset list to the device menu options
+
+// Default devices (from top of main)
+        Light livingRoomLight = new Light("Living Room Light");
+        Thermostat homeThermostat = new Thermostat( "Home Thermostat", 20.0, 25.0, notificationService);
+
+        addDevice(livingRoomLight);
+        addDevice(homeThermostat);
+        
+        
+Need to connect to global time ✔
+All Devices need turn On/Off (+isOn?) ✔
+What if name already exist? ✔
+
+             TYPE  |  Returns   |     Example
+Add SENSORS: Temp    Double            25.69
+              CO2     int (ppm)         450
+             Light    Bool           Day/Night
+             Noise    Bool       Hand-Clap detected
+             Smoke    Bool        Smoke detected
+          volumetric  Bool        Person in room
+          WMDetergent Bool        out of Detergent
+           WMSoftner  Bool        out of Softner
+           
+Add Devices:    TYPE      |    Brand/Model     |    Tasks             |    Messages
+          Washing Machine     Sumsung WM25     Start, Stop            Task status, task time, out of detergent / softner
+                Dryer          Bosch  LD25     Start, Stop            Task status, task time   
+        
+tests:
+
+Deleting by exact name
+
+Deleting by ID
+
+Entering a wrong name or ID
+

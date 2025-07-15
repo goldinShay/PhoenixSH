@@ -1,0 +1,89 @@
+package ui.gui;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class ChooseDeviceCtrlPage extends JPanel {
+    public static final int PAGE_NUMBER = 200;
+
+    public ChooseDeviceCtrlPage() {
+        setLayout(new BorderLayout());
+        setBackground(Color.DARK_GRAY);
+
+        // === Top Display Area ===
+        JPanel displayPanel = new JPanel();
+        displayPanel.setBackground(Color.BLACK);
+        displayPanel.setPreferredSize(new Dimension(800, 120));
+        displayPanel.setLayout(new GridLayout(1, 1));
+        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Choose a Device",
+                0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
+
+        JLabel placeholder = new JLabel("📟 Device Category Selection", JLabel.CENTER);
+        placeholder.setForeground(Color.LIGHT_GRAY);
+        placeholder.setFont(new Font("Monospaced", Font.BOLD, 16));
+        displayPanel.add(placeholder);
+
+        // === Center Buttons ===
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.X_AXIS));
+        centerPanel.setBackground(Color.DARK_GRAY);
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(60, 80, 60, 80));
+
+        Dimension squareSize = new Dimension(180, 180);
+
+        JButton lightsBtn = createMainButton("LIGHTS");
+        JButton utilsBtn = createMainButton("<html><center>HOUSE<br>UTILS</center></html>");
+        JButton securityBtn = createMainButton("SECURITY");
+
+        for (JButton btn : java.util.List.of(lightsBtn, utilsBtn, securityBtn)) {
+            btn.setPreferredSize(squareSize);
+            btn.setMinimumSize(squareSize);
+            btn.setMaximumSize(squareSize);
+            btn.setHorizontalAlignment(SwingConstants.CENTER);
+            btn.setVerticalAlignment(SwingConstants.CENTER);
+        }
+
+        centerPanel.add(Box.createHorizontalGlue());
+        centerPanel.add(lightsBtn);
+        centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
+        centerPanel.add(utilsBtn);
+        centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
+        centerPanel.add(securityBtn);
+        centerPanel.add(Box.createHorizontalGlue());
+
+        // === Footer ===
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(Color.BLACK);
+        footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+
+        JLabel pageLabel = new JLabel(String.format("Page %03d", PAGE_NUMBER));
+        pageLabel.setForeground(Color.GREEN);
+        pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
+
+// Match the visual depth by nesting the button in a panel
+        JPanel navButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        navButtonPanel.setBackground(Color.BLACK);
+
+        JButton homeBtn = new JButton("Home");
+        homeBtn.setFont(new Font("Arial", Font.PLAIN, 12));
+        homeBtn.addActionListener(e -> PageNavigator.goToPage(50));
+
+        navButtonPanel.add(homeBtn);
+
+        footer.add(pageLabel, BorderLayout.WEST);
+        footer.add(navButtonPanel, BorderLayout.EAST);
+
+
+        // === Layout All ===
+        add(displayPanel, BorderLayout.NORTH);
+        add(centerPanel, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
+    }
+
+    private JButton createMainButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 18));
+        button.setFocusPainted(false);
+        return button;
+    }
+}
