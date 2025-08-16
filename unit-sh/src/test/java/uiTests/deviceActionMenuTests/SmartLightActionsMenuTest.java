@@ -42,7 +42,7 @@ class SmartLightActionsMenuTest {
         SmartLight mockLight = mock(SmartLight.class);
         feedMockInput("1", "8");
 
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE); // 💥 Fix the crash
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE); // 💥 Fix the crash
         when(mockLight.isAutomationEnabled()).thenReturn(true);        // Optional
         when(mockLight.isOn()).thenReturn(false);                      // Optional
 
@@ -58,7 +58,7 @@ class SmartLightActionsMenuTest {
         SmartLight mockLight = mock(SmartLight.class);
         feedMockInput("2", "8");
 
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE); // 🩹 Stops NPE
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE); // 🩹 Stops NPE
         when(mockLight.isOn()).thenReturn(true);                        // Used in header
         when(mockLight.isAutomationEnabled()).thenReturn(false);       // Also in header
 
@@ -73,7 +73,7 @@ class SmartLightActionsMenuTest {
         SmartLight mockLight = mock(SmartLight.class);
         feedMockInput("3", "8");
 
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE);
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE);
         when(mockLight.isOn()).thenReturn(true);
         when(mockLight.isAutomationEnabled())
                 .thenReturn(false, false, false, false); // 🔥 All calls say "disabled"
@@ -90,7 +90,7 @@ class SmartLightActionsMenuTest {
         feedMockInput("5", "8");
 
         when(mockLight.supportsCustomMode()).thenReturn(true);
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE); // 🧯 for header
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE); // 🧯 for header
         when(mockLight.getLightMode()).thenReturn(null);               // optional
         when(mockLight.isOn()).thenReturn(true);
         when(mockLight.isAutomationEnabled()).thenReturn(true);
@@ -108,7 +108,7 @@ class SmartLightActionsMenuTest {
         feedMockInput("5", "8");
 
         when(mockLight.supportsCustomMode()).thenReturn(false);
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE);
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE);
         when(mockLight.getLightMode()).thenReturn(null);
         when(mockLight.isOn()).thenReturn(true);
         when(mockLight.isAutomationEnabled()).thenReturn(true);
@@ -124,7 +124,7 @@ class SmartLightActionsMenuTest {
         SmartLight mockLight = mock(SmartLight.class);
         feedMockInput("99", "8");
 
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE);
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE);
         when(mockLight.getLightMode()).thenReturn(null);
         when(mockLight.isOn()).thenReturn(true);
         when(mockLight.isAutomationEnabled()).thenReturn(true);
@@ -140,7 +140,7 @@ class SmartLightActionsMenuTest {
         SmartLight mockLight = mock(SmartLight.class);
         feedMockInput("8");
 
-        when(mockLight.getEffect()).thenReturn(SmartLightEffect.NONE);
+        when(mockLight.getLiteFx()).thenReturn(SmartLightEffect.NONE);
         when(mockLight.getLightMode()).thenReturn(null);
         when(mockLight.isOn()).thenReturn(true);
         when(mockLight.isAutomationEnabled()).thenReturn(true);

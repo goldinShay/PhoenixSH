@@ -17,8 +17,7 @@ public class AddSensorMenu {
     private static final Clock clock = Clock.systemDefaultZone();
 
     public static void run(String name) {
-        Scanner scanner = new Scanner(System.in); // ✅ One scanner to rule them all
-
+        Scanner scanner = new Scanner(System.in);
         System.out.println("\n=== Sensor Wizard ===");
 
         // 1️⃣ Select Sensor Type
@@ -35,31 +34,30 @@ public class AddSensorMenu {
             return;
         }
 
-        // 3️⃣ Enter default value
+        // 3️⃣ Enter current value
         System.out.print("Enter default value for the sensor: ");
-        int defaultValue;
+        double currentValue;
         try {
-            defaultValue = Integer.parseInt(scanner.nextLine().trim());
+            currentValue = Double.parseDouble(scanner.nextLine().trim());
         } catch (NumberFormatException e) {
             System.out.println("❌ Invalid default value.");
             return;
         }
 
-        // 4️⃣ Generate unique sensor ID
-        String sensorPrefix = sensorType.toString().substring(0, 2).toUpperCase() + "s";
-        String id = generateNextSensorId(sensorPrefix);
-        System.out.println("✅ Generated Sensor ID: " + id);
-
-        // 5️⃣ Create and store the sensor
+        // 4️⃣ Create and store the sensor
         try {
-            Sensor sensor = SensorFactory.createSensor(sensorType, id, name, clock);
+            Sensor sensor = SensorFactory.createSensor(sensorType, null, name, unit, currentValue, clock);
+            String id = sensor.getSensorId();
+
             SensorStorage.getSensors().put(id, sensor);
             XlCreator.writeSensorToExcel(sensor);
+
             System.out.printf("✅ Sensor '%s' (%s) created successfully!%n", name, id);
         } catch (Exception e) {
             System.out.println("❌ Failed to create sensor: " + e.getMessage());
         }
     }
+
 
     private static SensorType chooseSensorType(Scanner scanner) {
         System.out.println("\nSelect Sensor Type:");
@@ -93,22 +91,5 @@ public class AddSensorMenu {
         } catch (NumberFormatException e) {
             return MeasurementUnit.UNKNOWN;
         }
-    }
-
-    private static String generateNextSensorId(String prefix) {
-        int maxSuffix = SensorStorage.getSensors().keySet().stream()
-                .filter(id -> id.startsWith(prefix))
-                .map(id -> id.replaceAll("\\D+", ""))
-                .mapToInt(s -> {
-                    try {
-                        return Integer.parseInt(s);
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
-                })
-                .max()
-                .orElse(0);
-
-        return String.format("%s%03d", prefix, maxSuffix + 1);
     }
 }

@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import sensors.Sensor;
 import storage.SensorStorage;
-import ui.AutoOpLinker;
-import utils.AutoOpManager;
+import autoOp.AutoOpLinker;
+import autoOp.AutoOpManager;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;

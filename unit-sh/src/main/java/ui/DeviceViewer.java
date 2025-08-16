@@ -1,6 +1,7 @@
 package ui;
 
 import devices.Device;
+import devices.actions.LiveDeviceState;
 import sensors.Sensor;
 import storage.DeviceStorage;
 import storage.SensorStorage;
@@ -22,12 +23,22 @@ public class DeviceViewer {
     }
 
     public static Map<String, Object> getAllDevicesAndSensors() {
+        // 🔄 Reload from Excel
+        DeviceStorage.reloadFromExcel();
+        SensorStorage.loadSensorsFromExcel();
+
+        // 🔁 Sync live state with device data
+        DeviceStorage.getDevices().values().forEach(device -> {
+            if (device.isOn()) {
+                LiveDeviceState.turnOn(device);
+            } else {
+                LiveDeviceState.turnOff(device);
+            }
+        });
+
+        // 🧩 Combine devices and sensors
         Map<String, Object> combined = new LinkedHashMap<>();
-
-        // Devices
         combined.putAll(DeviceStorage.getDevices());
-
-        // Sensors
         SensorStorage.getUnmodifiableSensors().forEach(combined::put);
 
         return combined;
@@ -60,7 +71,7 @@ public class DeviceViewer {
                     if (item instanceof Device device) {
                         type = device.getType().name();
                         name = device.getName();
-                        state = device.getState();
+                        state = LiveDeviceState.isOn(device) ? "ON" : "OFF";
                     } else if (item instanceof Sensor sensor) {
                         type = "SENSOR";
                         name = sensor.getSensorName();

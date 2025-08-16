@@ -40,46 +40,61 @@ public class XlTaskSchedulerManager {
     }
 
     public static boolean addTask(String deviceId, String name, String action, String timestamp, String repeat) {
-        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
-            int rowNum = getFirstAvailableRow(tasks);
-            Row row = tasks.createRow(rowNum);
-            setCell(row, 0, deviceId);
-            setCell(row, 1, name);
-            setCell(row, 2, action);
-            setCell(row, 3, timestamp);
-            setCell(row, 4, repeat);
-            Log.debug("📆 Task added: " + action + " @ " + timestamp);
-        });
+        try {
+            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+                int rowNum = getFirstAvailableRow(tasks);
+                Row row = tasks.createRow(rowNum);
+                setCell(row, 0, deviceId);
+                setCell(row, 1, name);
+                setCell(row, 2, action);
+                setCell(row, 3, timestamp);
+                setCell(row, 4, repeat);
+                Log.debug("📆 Task added: " + action + " @ " + timestamp);
+            });
+        } catch (IOException e) {
+            Log.error("❌ Failed to add task for device [" + deviceId + "]: " + e.getMessage());
+            return false;
+        }
     }
 
     public static boolean updateTask(String deviceId, String newTimestamp, String newRepeat) {
-        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
-            for (Row row : tasks) {
-                if (row.getRowNum() == 0) continue;
-                if (getCellValue(row, 0).equals(deviceId)) {
-                    setCell(row, 3, newTimestamp);
-                    setCell(row, 4, newRepeat);
-                    Log.debug("♻️ Task updated for: " + deviceId);
-                    break;
+        try {
+            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+                for (Row row : tasks) {
+                    if (row.getRowNum() == 0) continue;
+                    if (getCellValue(row, 0).equals(deviceId)) {
+                        setCell(row, 3, newTimestamp);
+                        setCell(row, 4, newRepeat);
+                        Log.debug("♻️ Task updated for: " + deviceId);
+                        break;
+                    }
                 }
-            }
-        });
+            });
+        } catch (IOException e) {
+            Log.error("❌ Failed to update task for device [" + deviceId + "]: " + e.getMessage());
+            return false;
+        }
     }
 
     public static boolean deleteTask(String deviceId) {
-        return updateWorkbook((tasks, devices, sensors, senseControl, smartLightControl) -> {
-            int lastRow = tasks.getLastRowNum();
-            for (int i = 1; i <= lastRow; i++) {
-                Row row = tasks.getRow(i);
-                if (row != null && getCellValue(row, 0).equalsIgnoreCase(deviceId)) {
-                    tasks.removeRow(row);
-                    if (i < lastRow) {
-                        tasks.shiftRows(i + 1, lastRow, -1);
+        try {
+            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+                int lastRow = tasks.getLastRowNum();
+                for (int i = 1; i <= lastRow; i++) {
+                    Row row = tasks.getRow(i);
+                    if (row != null && getCellValue(row, 0).equalsIgnoreCase(deviceId)) {
+                        tasks.removeRow(row);
+                        if (i < lastRow) {
+                            tasks.shiftRows(i + 1, lastRow, -1);
+                        }
+                        Log.debug("🗑️ Task removed for: " + deviceId);
+                        break;
                     }
-                    Log.debug("🗑️ Task removed for: " + deviceId);
-                    break;
                 }
-            }
-        });
+            });
+        } catch (IOException e) {
+            Log.error("❌ Failed to delete task for device [" + deviceId + "]: " + e.getMessage());
+            return false;
+        }
     }
 }

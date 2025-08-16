@@ -18,9 +18,8 @@ public class SensorStorageTest {
             super(id, SensorType.DEBUG, name, unit, defaultVal, Clock.systemDefaultZone());
         }
 
-        @Override public int readCurrentValue() { return currentValue; }
+        @Override public double readCurrentValue() { return currentValue; }
         @Override public double getCurrentReading() { return currentValue; }
-        @Override public void simulateValue(int value) { this.currentValue = value; updateTimestamp(); }
     }
 
     private TestSensor sensor;

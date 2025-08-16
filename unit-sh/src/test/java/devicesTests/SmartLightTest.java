@@ -58,7 +58,7 @@ class SmartLightTest {
     @Test
     void whenApplyingColor_thenRgbValuesAreAccepted() {
         SmartLight light = newSupportedLight();
-        light.applyColor(10, 20, 30);
+        light.applyColour(10, 20, 30);
     }
 
     @Test
@@ -104,14 +104,14 @@ class SmartLightTest {
     void whenApplyingNullEffect_thenEffectDefaultsToNone() {
         SmartLight light = newSupportedLight();
         light.applyEffect(null);
-        assertEquals(SmartLightEffect.NONE, light.getEffect());
+        assertEquals(SmartLightEffect.NONE, light.getLiteFx());
     }
 
     @Test
     void whenApplyingEffectToUnsupportedModel_thenEffectRemainsNone() {
         SmartLight light = newUnsupportedLight();
         light.applyEffect(SmartLightEffect.FIRE);
-        assertEquals(SmartLightEffect.NONE, light.getEffect());
+        assertEquals(SmartLightEffect.NONE, light.getLiteFx());
     }
 
     @Test

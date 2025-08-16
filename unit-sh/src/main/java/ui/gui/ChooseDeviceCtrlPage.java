@@ -1,5 +1,9 @@
 package ui.gui;
 
+import devices.DeviceType;
+import storage.DeviceStorage;
+import ui.gui.devicesListPages.ChooseLightsUpdatePage;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -32,6 +36,15 @@ public class ChooseDeviceCtrlPage extends JPanel {
         Dimension squareSize = new Dimension(180, 180);
 
         JButton lightsBtn = createMainButton("LIGHTS");
+        lightsBtn.addActionListener(e -> {
+            DeviceStorage.reloadFromExcel();
+            ChooseLightsUpdatePage page = ChooseLightsUpdatePage.loadFresh(0, 120, DeviceType.LIGHT, DeviceType.SMART_LIGHT);
+            PageNavigator.registerPage(120, page);
+            DeviceStorage.reloadFromExcel(); // 🔁 Refresh memory
+            PageNavigator.registerPage(120, ChooseLightsUpdatePage.loadFresh(0, 120, DeviceType.LIGHT, DeviceType.SMART_LIGHT));
+            PageNavigator.goToPage(120);
+        });
+
         JButton utilsBtn = createMainButton("<html><center>HOUSE<br>UTILS</center></html>");
         JButton securityBtn = createMainButton("SECURITY");
 

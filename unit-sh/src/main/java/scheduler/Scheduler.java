@@ -6,6 +6,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import sensors.Sensor;
 import storage.DeviceStorage;
 import storage.xlc.XlDeviceManager;
+import storage.xlc.sheetsCommand.ScheduledTasksCommand;
 import utils.Log;
 
 import java.io.*;
@@ -18,13 +19,11 @@ import java.util.stream.Collectors;
 public class Scheduler {
 
     private static final String EXCEL_FILE = "/home/nira/Documents/Shay/Fleur/unit-sh/unit-sh/shsXl.xlsx";
-    private static final String TASKS_SHEET = "Scheduled Tasks";
+    private static final String TASKS_SHEET = "Scheduled_Tasks";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final long CHECK_INTERVAL_MS = 30 * 1000;
     private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
-    private final Clock clock = utils.ClockUtil.getClock();
     private Timer schedulerTimer;
-    private static final boolean DEBUG_MODE = false; // change to true when needed
 
 
     // 🔹 **Single Constructor: Guarantees deviceRegistry is initialized properly**
@@ -104,8 +103,6 @@ public class Scheduler {
         saveTasksToExcel();
     }
 
-
-
     // 🔹 Reschedules recurring tasks
     private void rescheduleTask(ScheduledTask task) {
         switch (task.getRepeat().toLowerCase()) {
@@ -123,7 +120,6 @@ public class Scheduler {
         File file = new File(EXCEL_FILE);
         Workbook workbook;
 
-        // ✅ Safe file loading: only write if file can be read
         try (FileInputStream fis = new FileInputStream(file)) {
             workbook = new XSSFWorkbook(fis);
         } catch (IOException e) {
@@ -131,11 +127,24 @@ public class Scheduler {
             return;
         }
 
-        // 🚨 Validate critical sheet presence before proceeding
-        if (workbook.getSheet("Devices") == null ||
-                workbook.getSheet("Sensors") == null ||
-                workbook.getSheet("Sense_Control") == null) {
-            System.err.println("🚫 Missing one or more critical sheets. Aborting ScheduledTasks save to protect Excel integrity.");
+        // ✅ Define required sheets using enum-friendly strings
+        String[] requiredSheets = {
+                "Devices",
+                "Sensors",
+                "Sens_Ctrl",
+                "Scheduled_Tasks",
+                "Smart_Light_Control"
+        };
+
+        boolean missingSheet = false;
+        for (String sheetName : requiredSheets) {
+            if (workbook.getSheet(sheetName) == null) {
+                System.err.println("🚫 Missing critical sheet: " + sheetName);
+                missingSheet = true;
+            }
+        }
+
+        if (missingSheet) {
             System.out.println("🧾 Sheets currently loaded in workbook:");
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 System.out.println(" - " + workbook.getSheetName(i));
@@ -146,22 +155,29 @@ public class Scheduler {
         Sheet sheet = workbook.getSheet(TASKS_SHEET);
         if (sheet == null) sheet = workbook.createSheet(TASKS_SHEET);
 
-        String[] headers = {"DEVICE ID", "DEVICE NAME", "ACTION", "SCHEDULED", "REPEAT"};
+        ScheduledTasksCommand[] fields = {
+                ScheduledTasksCommand.DEVICE_ID,
+                ScheduledTasksCommand.DEVICE_ID, // 2nd column for name
+                ScheduledTasksCommand.ACTION,
+                ScheduledTasksCommand.TIME,
+                ScheduledTasksCommand.REPEAT
+        };
+
         Row headerRow = sheet.getRow(0);
         if (headerRow == null) {
             headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
+            for (int i = 0; i < fields.length; i++) {
+                headerRow.createCell(i).setCellValue(fields[i].label());
             }
         }
 
-        // 🔄 Clear existing task rows (except header)
+        // 🔄 Clear old rows
         for (int i = sheet.getLastRowNum(); i > 0; i--) {
             Row row = sheet.getRow(i);
             if (row != null) sheet.removeRow(row);
         }
 
-        // 📝 Write fresh task list
+        // 📝 Write task data
         int rowIndex = 1;
         for (ScheduledTask task : scheduledTasks) {
             Row row = sheet.createRow(rowIndex++);
@@ -172,15 +188,13 @@ public class Scheduler {
             row.createCell(4).setCellValue(task.getRepeat());
         }
 
-        // 💾 Log workbook state before final save
+        // 🔍 Log workbook sheets
         Log.debug("💾 ScheduledTasks: Writing workbook with these sheets:");
         if (Log.DEBUG_MODE) {
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 System.out.println(" - " + workbook.getSheetName(i));
             }
         }
-
-
 
         try (FileOutputStream fos = new FileOutputStream(EXCEL_FILE)) {
             workbook.write(fos);
@@ -189,6 +203,7 @@ public class Scheduler {
             System.err.println("❌ Failed to save scheduled tasks: " + e.getMessage());
         }
     }
+
 
 //<----
 
@@ -203,31 +218,40 @@ public class Scheduler {
                 return;
             }
 
-            System.out.println("📂 Debug - Devices available when loading tasks: " + deviceRegistry.keySet());
+            // Build column mapping from header
+            Map<String, Integer> columnMap = new HashMap<>();
+            Row headerRow = sheet.getRow(0);
+            if (headerRow != null) {
+                for (Cell cell : headerRow) {
+                    String label = cell.getStringCellValue().trim();
+                    columnMap.put(label, cell.getColumnIndex());
+                }
+            }
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
 
-                String id = row.getCell(0).getStringCellValue().trim();
-                String action = row.getCell(2).getStringCellValue();
-                LocalDateTime time = LocalDateTime.parse(row.getCell(3).getStringCellValue(), FORMATTER);
-                String repeat = row.getCell(4).getStringCellValue();
+                String id = row.getCell(columnMap.get(ScheduledTasksCommand.DEVICE_ID.label())).getStringCellValue().trim();
+                String action = row.getCell(columnMap.get(ScheduledTasksCommand.ACTION.label())).getStringCellValue();
+                LocalDateTime time = LocalDateTime.parse(row.getCell(columnMap.get(ScheduledTasksCommand.TIME.label())).getStringCellValue(), FORMATTER);
+                String repeat = row.getCell(columnMap.get(ScheduledTasksCommand.REPEAT.label())).getStringCellValue();
 
-                Device device = deviceRegistry.get(id);
+                Device device = DeviceStorage.getDevices().get(id);
                 if (device == null) {
-                    System.out.println("⚠️ No registered device for ID " + id + ". Available devices: " + deviceRegistry.keySet());
+                    DeviceStorage.getDevices().keySet();
                     continue;
                 }
 
                 scheduledTasks.add(new ScheduledTask(device, action, time, repeat));
             }
 
-            System.out.println("✅ Loaded " + scheduledTasks.size() + " scheduled task(s) from Excel.");
+            System.out.println("✅ Loaded " + scheduledTasks.size() + " task(s) from Excel.");
         } catch (IOException e) {
             System.err.println("❌ Failed to load scheduled tasks: " + e.getMessage());
         }
     }
+
     // 🔹 Updates an existing scheduled task
     public void updateTask(int index, LocalDateTime newTime, String newRepeat) {
         if (index < 0 || index >= scheduledTasks.size()) {

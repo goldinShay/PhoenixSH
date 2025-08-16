@@ -2,7 +2,7 @@ package storageTests;
 
 import org.apache.poi.ss.usermodel.*;
 import org.junit.jupiter.api.Test;
-import storage.AutoOpExcelReader;
+import autoOp.AutoOpExcelReader;
 
 import java.util.List;
 
@@ -50,7 +50,7 @@ class AutoOpExcelReaderTest {
         assertEquals(1, result.size());
 
         AutoOpExcelReader.AutoOpRecord record = result.get(0);
-        assertEquals("D123", record.slaveId());
+        assertEquals("D123", record.linkedDeviceId());
         assertEquals("S789", record.sensorId());
         assertEquals(10.5, record.autoOn());
         assertEquals(5.5, record.autoOff());

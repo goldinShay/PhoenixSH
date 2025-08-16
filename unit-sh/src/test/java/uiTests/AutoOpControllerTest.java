@@ -2,7 +2,7 @@ package uiTests;
 
 import devices.Device;
 import org.junit.jupiter.api.Test;
-import ui.AutoOpController;
+import autoOp.AutoOpController;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;

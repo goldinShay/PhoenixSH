@@ -1,19 +1,32 @@
 import devices.Device;
+import devices.actions.LiveDeviceState;
 import scheduler.Scheduler;
 import sensors.Sensor;
 import storage.DeviceStorage;
 import storage.SensorStorage;
 import storage.XlCreator;
+import storage.xlc.XlTaskSchedulerManager;
 import storage.xlc.XlWorkbookUtils;
 import ui.Menu;
 import ui.gui.MainWindow;
-import utils.AutoOpManager;
+import autoOp.AutoOpManager;
+import ui.gui.PageNavigator;
+import ui.gui.managers.ButtonMapManager;
+import ui.gui.managers.GuiStateManager;
 import utils.DeviceIdManager;
-import utils.Log;
+import devices.DeviceType;
+
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.Timer;
+
+import storage.xlc.XlAutoOpManager;
+
+import javax.swing.*;
+
+import static ui.gui.managers.ButtonMapManager.renderPageForTypes;
 
 public class SmartHomeSystem {
 
@@ -24,17 +37,62 @@ public class SmartHomeSystem {
 
         System.out.println("📂 Initializing Smart Home System...");
 
+        if (!validateWorkbook(guiMode)) {
+            System.err.println("🚫 Startup aborted due to missing or corrupt Excel file.");
+            return;
+        }
+
         if (guiMode) {
-            initializeSystem(); // 👈 Add this line
-            launchGui();
+            MainWindow.initialize();     // ✅ Construct GUI first
+            initializeSystem();          // ✅ Now safe to call PageNavigator
+            MainWindow.launch();              // ✅ Show GUI
             new Thread(SmartHomeSystem::launchCli).start();
         } else {
-            if (!ensureExcelFileExists(false)) return;
-            initializeSystem();
+            initializeSystem();      // CLI-only mode
             launchCli();
         }
     }
 
+
+    private static boolean validateWorkbook(boolean guiMode) {
+        File excelFile = XlWorkbookUtils.getFilePath().toFile();
+
+        if (!excelFile.exists() || !XlWorkbookUtils.isExcelFileHealthy(excelFile)) {
+            if (guiMode) {
+                return XlWorkbookUtils.ensureFileExists(); // GUI prompt
+            } else {
+                return ensureExcelFileExists(false); // CLI prompt
+            }
+        }
+
+        return true;
+    }
+
+    private static void initializeSystem() {
+        try {
+            GuiStateManager.refreshGuiFromMemory();
+
+            DeviceStorage.initialize();              // ✅ Devices loaded here
+            SensorStorage.loadSensorsFromExcel();
+            XlTaskSchedulerManager.loadTasks();
+
+            linkDevicesAndSensors();
+            prepareScheduler();
+
+            GuiStateManager.refreshDeviceMatrix();   // ✅ Buttons registered here
+
+            // ✅ NOW the matrix is ready — build and register page 120
+            JPanel lightPage = ButtonMapManager.renderPageForTypes(
+                    new DeviceType[]{DeviceType.LIGHT}, 0, 120
+            );
+            PageNavigator.registerPage(120, lightPage);
+
+            System.out.println("✅ System initialized successfully.");
+        } catch (Exception e) {
+            System.err.println("🚨 System initialization failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     private static boolean ensureExcelFileExists(boolean guiMode) {
         File excelFile = XlWorkbookUtils.getFilePath().toFile();
@@ -68,49 +126,9 @@ public class SmartHomeSystem {
         return false;
     }
 
-    private static void initializeSystem() {
-        try {
-            initializeDataStores();
-            linkDevicesAndSensors();
-            prepareScheduler();
-        } catch (Exception e) {
-            System.err.println("🚨 System initialization failed: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private static void initializeDataStores() {
-        DeviceStorage.initialize();
-        SensorStorage.loadSensorsFromExcel();
-
-        Map<String, Device> devices = DeviceStorage.getDevices();
-        Map<String, Sensor> sensors = SensorStorage.getSensors();
-
-        DeviceIdManager idManager = DeviceIdManager.getInstance();
-
-        // 🧠 Feed both device and sensor IDs into the manager
-        List<String> deviceIds = devices.values().stream()
-                .map(Device::getId)
-                .toList();
-
-        List<String> sensorIds = sensors.values().stream()
-                .map(Sensor::getSensorId)
-                .toList();
-
-        idManager.addKnownIds(deviceIds);
-        idManager.addKnownIds(sensorIds);
-
-        System.out.println("🆔 DeviceIdManager initialized with " +
-                (deviceIds.size() + sensorIds.size()) + " total known IDs.");
-
-        XlCreator.loadSensorLinks(devices, sensors);
-        AutoOpManager.restoreMemoryLinks();
-    }
-
-
     private static void linkDevicesAndSensors() {
-        relinkSlavesToSensors();
-        AutoOpManager.reevaluateAllSensors(); // Immediately apply automation logic after linkage
+//        AutoOpLinker.relinkLinkedDevicesToSensors();
+        AutoOpManager.reevaluateAllSensors();
     }
 
     private static void prepareScheduler() {
@@ -136,32 +154,5 @@ public class SmartHomeSystem {
 
     private static void launchCli() {
         Menu.show(DeviceStorage.getDevices(), DeviceStorage.getDeviceThreads(), scheduler);
-    }
-
-    private static void relinkSlavesToSensors() {
-        for (Sensor sensor : SensorStorage.getSensors().values()) {
-            sensor.getSlaves().clear();
-            System.out.printf("🧹 Cleared slave list for sensor '%s'%n", sensor.getSensorId());
-        }
-
-        for (Device device : DeviceStorage.getDevices().values()) {
-            if (!device.isAutomationEnabled()) continue;
-
-            String sensorId = device.getAutomationSensorId();
-            Sensor sensor = SensorStorage.getSensors().get(sensorId);
-
-            if (sensor != null) {
-                System.out.printf("💡 Before link, sensor '%s' has %d slaves%n",
-                        sensor.getSensorId(), sensor.getSlaves().size());
-
-                sensor.addSlave(device);
-
-                System.out.printf("🔗 Final Link → %s → %s | AutoOp: %b | Ref: %s%n",
-                        device.getId(), sensor.getSensorId(), device.isAutomationEnabled(),
-                        System.identityHashCode(device));
-            } else {
-                Log.warn("⚠️ No sensor found for device " + device.getId() + " (Sensor ID: " + sensorId + ")");
-            }
-        }
     }
 }

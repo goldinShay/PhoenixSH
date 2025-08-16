@@ -4,11 +4,11 @@ import devices.Device;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
 import sensors.Sensor;
-import storage.AutoOpExcelReader;
-import storage.AutoOpExcelReader.AutoOpRecord;
+import autoOp.AutoOpExcelReader;
+import autoOp.AutoOpExcelReader.AutoOpRecord;
 import storage.DeviceStorage;
 import storage.SensorStorage;
-import utils.AutoOpManager;
+import autoOp.AutoOpManager;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ class AutoOpManagerTest {
 
         when(slaveMock.getId()).thenReturn("D123");
         when(sensorMock.getSensorId()).thenReturn("S789");
-        when(sensorMock.getSlaves()).thenReturn(new ArrayList<>());
+        when(sensorMock.getLinkedDevice()).thenReturn(new ArrayList<>());
 
         DeviceStorage.getDevices().put("D123", slaveMock);
         SensorStorage.getSensors().put("S789", sensorMock);
@@ -84,11 +84,11 @@ class AutoOpManagerTest {
         slaveList.add(slaveMock);
 
         when(sensorMock.getCurrentReading()).thenReturn(42.0);
-        when(sensorMock.getSlaves()).thenReturn(slaveList);
+        when(sensorMock.getLinkedDevice()).thenReturn(slaveList);
         when(slaveMock.getId()).thenReturn("D123");
 
         AutoOpManager.reevaluateAllSensors();
 
-        verify(sensorMock).notifySlaves(42.0);
+        verify(sensorMock).notifyLinkedDevices(42.0);
     }
 }

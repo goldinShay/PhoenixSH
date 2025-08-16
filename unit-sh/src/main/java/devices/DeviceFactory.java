@@ -1,15 +1,20 @@
 package devices;
 
+import devices.actions.ApprovedDeviceModel;
 import devices.actions.SmartLightColorMode;
 import devices.actions.SmartLightEffect;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import storage.xlc.XlSmartLightManager;
 import storage.xlc.XlWorkbookUtils;
 import storage.xlc.sheetsCommand.DeviceSheetCommand;
+import storage.xlc.sheetsCommand.SmartLightSheetCommand;
 import utils.Log;
 import utils.NotificationService;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.*;
@@ -22,154 +27,133 @@ public class DeviceFactory {
     public static void setDeviceCreator(DeviceCreator creator) {
         overrideDeviceCreator = creator;
     }
+//TODO: carve createDevice, place holder for model: GENERIC, add brand and model to all device types
+public static Device createDevice(
+        DeviceType type,
+        String id,
+        String name,
+        Clock clock,
+        Map<String, Device> allDevices,
+        ApprovedDeviceModel approvedModel,
+        String brand,
+        String model
+) {
+    boolean skipIdCheck = true;
 
-    public static Device createDevice(
+    if (overrideDeviceCreator != null) {
+        return overrideDeviceCreator.create(id, name, clock, allDevices);
+    }
+
+    // ✅ Validate model
+    if (ApprovedDeviceModel.lookup(brand, model) == null) {
+        throw new IllegalArgumentException("Device not approved: " + brand + " " + model);
+    }
+
+    double autoOn = 1024.0;
+    double autoOff = 1050.0;
+    boolean autoEnabled = false;
+
+    // 📥 Load thresholds and automation flags from Excel
+    try (Workbook workbook = WorkbookFactory.create(new FileInputStream(XlWorkbookUtils.getFilePath().toFile()))) {
+        Sheet sheet = workbook.getSheet("Devices");
+        if (sheet != null) {
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
+                String sheetId = XlWorkbookUtils.getCellValue(row, DeviceSheetCommand.DEVICE_ID.ordinal()).trim();
+                if (!id.equals(sheetId)) continue;
+
+                autoOn = Optional.ofNullable(row.getCell(DeviceSheetCommand.AUTO_ON.ordinal()))
+                        .map(Cell::getNumericCellValue).orElse(autoOn);
+
+                autoOff = Optional.ofNullable(row.getCell(DeviceSheetCommand.AUTO_OFF.ordinal()))
+                        .map(Cell::getNumericCellValue).orElse(autoOff);
+
+                autoEnabled = Optional.ofNullable(row.getCell(DeviceSheetCommand.AUTO_ENABLED.ordinal()))
+                        .map(cell -> switch (cell.getCellType()) {
+                            case BOOLEAN -> cell.getBooleanCellValue();
+                            case STRING -> Boolean.parseBoolean(cell.getStringCellValue().trim());
+                            default -> false;
+                        }).orElse(false);
+
+                // 🧠 Fallback brand/model from sheet if missing
+                brand = Optional.ofNullable(row.getCell(DeviceSheetCommand.BRAND.ordinal()))
+                        .map(Cell::getStringCellValue).orElse(brand);
+
+                model = Optional.ofNullable(row.getCell(DeviceSheetCommand.MODEL.ordinal()))
+                        .map(Cell::getStringCellValue).orElse(model);
+
+                break;
+            }
+        }
+    } catch (IOException e) {
+        Log.warn("⚠️ Failed to read device sheet: " + e.getMessage());
+    }
+
+    // ✅ Final model validation
+    ApprovedDeviceModel resolvedModel = ApprovedDeviceModel.lookup(brand, model);
+    if (resolvedModel == null) {
+        throw new IllegalArgumentException("❌ Device creation failed: Unapproved model → " + brand + " / " + model);
+    }
+
+    // 🎯 Create device by type
+    Device device = switch (type) {
+        case LIGHT -> {
+            boolean savedState = getSavedState(id);
+            Light light = new Light(id, name, clock, savedState, autoOn, autoOff, skipIdCheck);
+            light.setAutomationEnabled(autoEnabled);
+            yield light;
+        }
+
+        case SMART_LIGHT -> {
+            boolean savedState = getSavedState(id);
+            SmartLight smartLight = new SmartLight(id, name, resolvedModel, clock, savedState, autoOn, autoOff, skipIdCheck);
+            smartLight.setAutomationEnabled(autoEnabled);
+            // 🌈 Optional: write config if needed
+            XlSmartLightManager.writeSmartLight(smartLight);
+            yield smartLight;
+        }
+
+        case DRYER -> new Dryer(id, name, brand, model, clock, false, autoOn, autoOff, skipIdCheck);
+        case WASHING_MACHINE -> new WashingMachine(id, name, brand, model, clock, false, autoOn, autoOff, skipIdCheck);
+        case THERMOSTAT -> {
+            NotificationService ns = new NotificationService();
+            yield new Thermostat(id, name, 25.0, ns, clock, skipIdCheck);
+        }
+
+        default -> throw new IllegalArgumentException("❌ Unknown device type: " + type);
+    };
+
+    // 🧾 Apply brand/model to all devices
+    device.setBrand(brand);
+    device.setModel(model);
+
+    return device;
+}
+
+    public static Device createDeviceByType(
             DeviceType type,
             String id,
             String name,
             Clock clock,
-            Map<String, Device> allDevices
+            Map<String, Device> existingDevices,
+            String brand,
+            String model
     ) {
-        boolean skipIdCheck = (allDevices == null);
-
-        if (overrideDeviceCreator != null) {
-            return overrideDeviceCreator.create(id, name, clock, allDevices);
-        }
-
-        switch (type) {
-            case LIGHT -> {
-                boolean savedState = getSavedState(id);
-                double autoOn = 1024.0, autoOff = 1050.0;
-                boolean autoEnabled = false;
-
-                try (Workbook workbook = new XSSFWorkbook(new FileInputStream(XlWorkbookUtils.getFilePath().toFile()))) {
-                    Sheet sheet = workbook.getSheet("Devices");
-                    if (sheet != null) {
-                        for (Row row : sheet) {
-                            if (row.getRowNum() == 0) continue;
-                            if (Objects.equals(row.getCell(1).getStringCellValue(), id)) {
-                                autoOn = Optional.ofNullable(row.getCell(6)).map(Cell::getNumericCellValue).orElse(autoOn);
-                                autoOff = Optional.ofNullable(row.getCell(7)).map(Cell::getNumericCellValue).orElse(autoOff);
-
-                                Cell autoCell = row.getCell(5);
-                                autoEnabled = (autoCell != null && switch (autoCell.getCellType()) {
-                                    case BOOLEAN -> autoCell.getBooleanCellValue();
-                                    case STRING -> Boolean.parseBoolean(autoCell.getStringCellValue().trim());
-                                    default -> false;
-                                });
-                                break;
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    Log.error("🛑 Failed to read thresholds for LIGHT [" + id + "]: " + e.getMessage());
-                }
-
-                Light light = new Light(id, name, clock, savedState, autoOn, autoOff, skipIdCheck);
-                light.setAutomationEnabled(autoEnabled);
-                return light;
-            }
-
-            case SMART_LIGHT -> {
-                boolean savedState = getSavedState(id);
-                double autoOn = DeviceDefaults.getDefaultAutoOn(DeviceType.SMART_LIGHT);
-                double autoOff = DeviceDefaults.getDefaultAutoOff(DeviceType.SMART_LIGHT);
-                boolean autoEnabled = false;
-                String brand = "Unknown", model = "Unknown";
-                String colorModeLabel = null;
-
-                try (Workbook workbook = new XSSFWorkbook(new FileInputStream(XlWorkbookUtils.getFilePath().toFile()))) {
-                    Sheet sheet = workbook.getSheet("Devices");
-                    if (sheet != null) {
-                        for (Row row : sheet) {
-                            if (row.getRowNum() == 0) continue;
-                            if (Objects.equals(XlWorkbookUtils.getCellValue(row, 1).trim(), id)) {
-                                autoOn = Optional.ofNullable(row.getCell(6)).map(Cell::getNumericCellValue).orElse(autoOn);
-                                autoOff = Optional.ofNullable(row.getCell(7)).map(Cell::getNumericCellValue).orElse(autoOff);
-
-                                autoEnabled = Optional.ofNullable(row.getCell(5)).map(cell -> switch (cell.getCellType()) {
-                                    case BOOLEAN -> cell.getBooleanCellValue();
-                                    case STRING -> Boolean.parseBoolean(cell.getStringCellValue().trim());
-                                    default -> false;
-                                }).orElse(false);
-
-                                brand = XlWorkbookUtils.getCellValue(row, DeviceSheetCommand.BRAND.ordinal());
-                                model = XlWorkbookUtils.getCellValue(row, DeviceSheetCommand.MODEL.ordinal());
-                                colorModeLabel = XlWorkbookUtils.getCellValue(row, DeviceSheetCommand.COLOR_MODE.ordinal());
-                                break;
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    Log.error("🛑 Failed to read SmartLight parameters for ID [" + id + "]: " + e.getMessage());
-                }
-
-                SmartLight smartLight = new SmartLight(id, name, brand, model, clock, savedState, autoOn, autoOff, skipIdCheck);
-                smartLight.setAutomationEnabled(autoEnabled);
-                smartLight.setColorMode(
-                        (colorModeLabel != null && !colorModeLabel.isBlank())
-                                ? SmartLightColorMode.fromLabel(colorModeLabel)
-                                : SmartLightColorMode.WARM_WHITE);
-
-                smartLight.applyEffect(SmartLightEffect.NONE);
-
-                return smartLight;
-            }
-
-
-
-
-            case DRYER, WASHING_MACHINE -> {
-                String brand = "Generic";
-                String model = "Default";
-
-                try (Workbook workbook = new XSSFWorkbook(new FileInputStream(XlWorkbookUtils.getFilePath().toFile()))) {
-                    Sheet sheet = workbook.getSheet("Devices");
-                    if (sheet != null) {
-                        for (Row row : sheet) {
-                            if (row.getRowNum() == 0) continue;
-                            if (Objects.equals(row.getCell(1).getStringCellValue(), id)) {
-                                brand = Optional.ofNullable(row.getCell(3)).map(Cell::getStringCellValue).orElse(brand);
-                                model = Optional.ofNullable(row.getCell(4)).map(Cell::getStringCellValue).orElse(model);
-                                break;
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    Log.warn("⚠️ Failed to load brand/model for [" + type + "] " + id + ": " + e.getMessage());
-                }
-
-                return switch (type) {
-                    case DRYER -> new Dryer(id, name, brand, model, clock,
-                            false,              // isOn (default: off)
-                            1024.0,             // autoOnThreshold
-                            1050.0,             // autoOffThreshold
-                            skipIdCheck);
-                    case WASHING_MACHINE -> new WashingMachine(id, name, brand, model, clock,
-                            false,     // isOn
-                            1024.0,    // autoOnThreshold
-                            1050.0,    // autoOffThreshold
-                            skipIdCheck);
-                    default -> throw new IllegalStateException("Unexpected type: " + type);
-                };
-            }
-
-            case THERMOSTAT -> {
-                double defaultTemp = 25.0;
-                NotificationService ns = new NotificationService();
-                return new Thermostat(id, name, defaultTemp, ns, clock, skipIdCheck);
-            }
-
-            default -> throw new IllegalArgumentException("❌ Unknown device type: " + type);
-        }
-    }
-
-    public static Device createDeviceByType(DeviceType type, String id, String name, Clock clock, Map<String, Device> existingDevices) {
         Log.debug("🔍 DeviceFactory - Enum Type: [" + type + "]");
+        Log.debug("🧪 Brand/Model for device: [" + brand + "] / [" + model + "]");
+
+        ApprovedDeviceModel approvedModel = ApprovedDeviceModel.lookup(brand, model);
+
+        if (approvedModel == null) {
+            Log.warn("❌ No approved model found for: " + brand + " / " + model + " — proceeding without strict enforcement.");
+            // Optionally: try sanitizing inputs or log raw Excel values
+        }
+
         try {
-            return createDevice(type, id, name, clock, existingDevices);
+            return createDevice(type, id, name, clock, existingDevices, approvedModel, brand, model);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("❌ Failed to create device for type: " + type, e);
+            Log.error("💥 Device creation failed: " + e.getMessage());
+            return null; // allow recovery upstream
         }
     }
 

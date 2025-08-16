@@ -2,7 +2,7 @@ package ui.deviceActionMenu;
 
 import devices.Device;
 import devices.Light;
-import ui.AutoOpController;
+import autoOp.AutoOpController;
 
 import java.util.Scanner;
 

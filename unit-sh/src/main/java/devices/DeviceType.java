@@ -1,7 +1,5 @@
 package devices;
 
-import utils.Log;
-
 public enum DeviceType {
     UNKNOWN("Unknown"),
     LIGHT("Light"),
@@ -21,16 +19,22 @@ public enum DeviceType {
     public String toString() {
         return label;
     }
-    public static DeviceType fromString(String typeString) {
-        if (typeString == null || typeString.isBlank()) return DeviceType.UNKNOWN;
+    public static DeviceType fromString(String input) {
+        if (input == null || input.isBlank()) return UNKNOWN;
 
-        try {
-            return DeviceType.valueOf(typeString.trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            Log.warn("🚫 Unknown DeviceType received: '" + typeString + "'");
-            return DeviceType.UNKNOWN;
-        }
+        String normalized = input.trim().toUpperCase().replace(" ", "_").replace("-", "_");
+
+        return switch (normalized) {
+            case "LIGHT" -> LIGHT;
+            case "SMART_LIGHT" -> SMART_LIGHT;
+            case "THERMOSTAT" -> THERMOSTAT;
+            case "DRYER" -> DRYER;
+            case "WASHING_MACHINE" -> WASHING_MACHINE;
+            case "SENSOR" -> SENSOR;
+            default -> UNKNOWN;
+        };
     }
+
 
 }
 
