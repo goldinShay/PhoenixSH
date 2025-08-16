@@ -1,11 +1,11 @@
 package storage.xlc.sheetsCommand;
 
 public enum XlTabNames {
-    DEVICES("Devices"),
-    SENSORS("Sensors"),
     SCHEDULED_TASKS("Scheduled Tasks"),
-    SENSE_CONTROL("Sense_Control"),
-    SMART_LIGHT_CONTROL("Smart_Light_Control");
+    DEVICES("Devices"),
+    SMART_LIGHT_CONTROL("Smart_Light_Control"),
+    SENSORS("Sensors"),
+    SENSE_CONTROL("Sense_Control");
 
     private final String label;
 

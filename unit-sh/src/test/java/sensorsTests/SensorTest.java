@@ -23,13 +23,13 @@ public class SensorTest {
             super(id, SensorType.LIGHT, name, unit, defaultValue, Clock.systemDefaultZone());
         }
 
-        @Override public int readCurrentValue() { return currentValue; }
+        @Override public double readCurrentValue() { return currentValue; }
         @Override public double getCurrentReading() { return currentValue; }
 
-        @Override public void simulateValue(int value) {
+        @Override public void simulateValue(double value) {
             this.currentValue = value;
             updateTimestamp();
-            notifySlaves(value);
+            notifyLinkedDevices(value);
         }
     }
 

@@ -2,58 +2,84 @@ package sensors;
 
 import devices.Device;
 import devices.DeviceType;
-
 import java.time.Clock;
+import java.util.*;
 
 public class LightSensor extends Sensor {
 
-    public LightSensor(String sensorId, String name, String unit, int defaultValue, Clock clock) {
-        super(sensorId, SensorType.LIGHT, name, unit, defaultValue, clock); // ✅ Now matches parent
-    }
+    // ✅ Slave device collection
+    private final Set<Device> linkedDevices = new HashSet<>();
 
-
-    @Override
-    public int readCurrentValue() {
-        return currentValue;  // In a real-world scenario, you'd access hardware or service APIs here
+    public LightSensor(String sensorId, String name, MeasurementUnit unit, double currentValue, Clock clock) {
+        super(sensorId, SensorType.LIGHT, name, unit, currentValue, clock);
     }
 
     @Override
-    public void simulateValue(int value) {
+    public double readCurrentValue() {
+        return currentValue;
+    }
+
+    @Override
+    public void simulateValue(double value) {
         this.currentValue = value;
         System.out.println("🔆 [LightSensor] " + sensorName + " simulated value: " + value + " " + unit);
         updateTimestamp();
-        notifySlaves(value); // ⚡ Trigger automation logic for linked devices
+        System.out.println("📦 Sensor '" + sensorName + "' has " + getLinkedDevice().size() + " slaves at simulation");
+        notifyLinkedDevices(value);
     }
-    public void notifySlaves(int value) {
-        System.out.println("📣 [LightSensor] Broadcasting value " + value + " " + unit + " to slaves...");
 
-        for (Device slave : slaves) {
+    public void notifyLinkedDevices(double value) {
+        System.out.printf("📣 [LightSensor] Broadcasting value %.2f %s to linkedDevices...%n", value, unit);
+
+        for (Device slave : linkedDevices) {
             if (slave == null || !slave.isAutomationEnabled()) continue;
 
-            // Only target lights
             if (slave.getType() == DeviceType.LIGHT) {
-                String name = slave.getName();
-                double threshold = slave.getAutoOnThreshold();
+                double threshold = slave.getAutoThreshold();
+                boolean shouldTurnOn = value < threshold && !slave.isOn();
+                boolean shouldTurnOff = value >= threshold && slave.isOn();
 
-                if (value < threshold && !slave.isOn()) {
+                if (shouldTurnOn) {
                     slave.turnOn();
-                    System.out.println("💡 Auto ON triggered for: " + name);
-                } else if (value >= threshold && slave.isOn()) {
+                    System.out.println("💡 Auto ON triggered for: " + slave.getName());
+                } else if (shouldTurnOff) {
                     slave.turnOff();
-                    System.out.println("🌙 Auto OFF triggered for: " + name);
+                    System.out.println("🌙 Auto OFF triggered for: " + slave.getName());
                 }
             }
         }
     }
 
+    // 🔄 Renamed to avoid conflict with Sensor class
+    public final void linkDevice(Device device) {
+        if (device != null && !linkedDevices.contains(device)) {
+            internalAddLinkedDevice(device);
+        }
+    }
+
+    @Override
+    void internalAddLinkedDevice(Device device) {
+        if (device != null && !linkedDevices.contains(device)) {
+            linkedDevices.add(device);
+            System.out.println("🔗 [LightSensor] Linked: " + device.getName());
+        } else {
+            System.out.println("⚠️ [LightSensor] Skipped linking null or duplicate device");
+        }
+    }
+
+    @Override
+    public List<Device> getLinkedDevice() {
+        return Collections.unmodifiableList(new ArrayList<>(linkedDevices)); // Converts Set → List
+    }
+
+
     @Override
     public double getCurrentReading() {
-        return currentValue; // This keeps the logic consistent with simulateValue()
+        return currentValue;
     }
 
     @Override
     public String toString() {
         return "[LightSensor] " + sensorName + " (" + sensorId + ") - Current: " + currentValue + " " + unit;
     }
-
 }

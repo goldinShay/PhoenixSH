@@ -1,12 +1,17 @@
 package ui;
 
-import devices.*;
+import devices.Device;
+import devices.DeviceFactory;
+import devices.DeviceType;
+import devices.actions.ApprovedDeviceModel;
+import devices.actions.LiveDeviceState;
 import storage.DeviceStorage;
-import storage.XlCreator;
+import storage.xlc.nxl.DeviceWriteCoordinator;
+import ui.gui.managers.GuiStateManager;
 
 import java.time.Clock;
 import java.util.*;
-import devices.DeviceFactory;
+
 
 public class AddDeviceMenu {
 
@@ -20,7 +25,6 @@ public class AddDeviceMenu {
     public static void addDeviceMenu(Map<String, Device> devices, List<Thread> deviceThreads) {
         System.out.println("\n=== Add a Device ===");
 
-        // ✅ Filter out UNKNOWN from menu
         List<DeviceType> availableTypes = Arrays.stream(DeviceType.values())
                 .filter(type -> type != DeviceType.UNKNOWN)
                 .toList();
@@ -31,13 +35,11 @@ public class AddDeviceMenu {
 
         System.out.println((availableTypes.size() + 1) + " - Back (to Device menu)");
         System.out.print("Select a device type (or " + (availableTypes.size() + 1) + " to cancel): ");
-
         String input = scanner.nextLine();
 
         try {
             int choice = Integer.parseInt(input);
             if (choice == availableTypes.size() + 1) return;
-
             if (choice < 1 || choice > availableTypes.size()) {
                 System.out.println("❌ Invalid choice.");
                 return;
@@ -50,7 +52,7 @@ public class AddDeviceMenu {
             boolean nameExists = devices.values().stream()
                     .anyMatch(device -> device.getName().equalsIgnoreCase(name));
             if (nameExists) {
-                System.out.println("❌ A device with that name already exists. Please choose a different name.");
+                System.out.println("❌ A device with that name already exists.");
                 return;
             }
 
@@ -64,19 +66,45 @@ public class AddDeviceMenu {
             if (!storedDevices.isEmpty()) {
                 utils.DeviceIdManager.getInstance().setExistingDevices(new ArrayList<>(storedDevices.values()));
             }
+
             System.out.println("📋 Known IDs before generation: " + devices.keySet());
             String id = utils.DeviceIdManager.getInstance().generateIdForType(selectedType);
 
+            // 🌟 Select brand/model *before* creating device
+            ApprovedDeviceModel approved = null;
+            System.out.println("🔍 Choose a brand/model (or press Enter to skip):");
+            List<ApprovedDeviceModel> matches = ApprovedDeviceModel.getByType(selectedType);
+
+            for (int i = 0; i < matches.size(); i++) {
+                ApprovedDeviceModel entry = matches.get(i);
+                System.out.printf("%d - %s %s%n", i + 1, entry.getBrand(), entry.getModel());
+            }
+
+            System.out.print("Your choice: ");
+            String brandModelChoice = scanner.nextLine().trim();
+
+            if (!brandModelChoice.isEmpty()) {
+                try {
+                    int bmIndex = Integer.parseInt(brandModelChoice);
+                    if (bmIndex >= 1 && bmIndex <= matches.size()) {
+                        approved = matches.get(bmIndex - 1);
+                        System.out.println("🟢 Selected: " + approved.getBrand() + " / " + approved.getModel());
+                    } else {
+                        System.out.println("❌ Invalid index.");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("❌ Invalid input.");
+                }
+            } else {
+                System.out.println("ℹ️ No selection — defaulting to Unknown brand/model.");
+            }
+
+            String brand = (approved != null && !approved.getBrand().isBlank()) ? approved.getBrand() : "Unknown";
+            String model = (approved != null && !approved.getModel().isBlank()) ? approved.getModel() : "Unknown";
+
             Device newDevice = DeviceFactory.createDevice(
-                    selectedType, id, name, clock, DeviceFactory.getDevices()
+                    selectedType, id, name, clock, DeviceFactory.getDevices(), approved, brand, model
             );
-
-            System.out.print("Enter brand: ");
-            String brand = scanner.nextLine().trim();
-
-            System.out.print("Enter model: ");
-            String model = scanner.nextLine().trim();
-
             newDevice.setBrand(brand);
             newDevice.setModel(model);
 
@@ -85,9 +113,16 @@ public class AddDeviceMenu {
             thread.start();
             deviceThreads.add(thread);
 
-            XlCreator.writeDeviceToExcel(newDevice);
+            DeviceWriteCoordinator.writeDeviceToWorkbook(newDevice);
 
             System.out.printf("✅ %s (%s) added successfully!%n", name, id);
+
+            // 🧠 GUI sync block — make it visible in the matrix
+            GuiStateManager.registerNewDevice(newDevice);
+            LiveDeviceState.turnOn(newDevice); // or turnOff if preferred
+            DeviceStorage.getDevices().put(newDevice.getId(), newDevice); // safe redundancy
+            GuiStateManager.refreshDeviceMatrix();
+            System.out.println("✅ " + newDevice.getName() + " (" + newDevice.getId() + ") added to GUI button map successfully!");
 
         } catch (NumberFormatException e) {
             System.out.println("❌ Please enter a valid number.");
@@ -95,6 +130,7 @@ public class AddDeviceMenu {
             System.out.println("❌ Failed to add device: " + e.getMessage());
         }
     }
+
 
     private static String capitalize(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();

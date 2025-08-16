@@ -1,25 +1,24 @@
 package sensors;
 
 import devices.Device;
-import utils.Log;
-
 import java.time.Clock;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public abstract class Sensor implements Runnable {
 
-    // ─── 🔑 Identity & Metadata ───
+    // ─── 🔑 Identity ───
     protected final String sensorId;
-    public String sensorName;
-    public String unit;
+    protected String sensorName;
+    protected MeasurementUnit unit;
     protected final SensorType type;
 
-    // ─── ⚙️ Runtime State ───
-    protected int currentValue;
-    protected final List<Device> slaves = new ArrayList<>();
+    // ─── ⚙️ Runtime ───
+    protected double currentValue;
     protected final Clock clock;
+
+    // ─── 🔗 Device Linkage ───
+    private final List<Device> linkedDevices = new ArrayList<>();
 
     // ─── 🕒 Timestamps ───
     protected final ZonedDateTime createdTimestamp;
@@ -27,102 +26,113 @@ public abstract class Sensor implements Runnable {
     protected ZonedDateTime removedTimestamp;
 
     // ─── 🏗 Constructor ───
-    public Sensor(String sensorId, SensorType type, String sensorName, String unit, int defaultValue, Clock clock) {
+    public Sensor(String sensorId, SensorType type, String sensorName, MeasurementUnit unit, double currentValue, Clock clock) {
         this.sensorId = sensorId;
         this.type = type;
         this.sensorName = sensorName;
         this.unit = unit;
+        this.currentValue = currentValue;
         this.clock = clock;
         this.createdTimestamp = ZonedDateTime.now(clock);
         this.updatedTimestamp = createdTimestamp;
-        this.currentValue = defaultValue;
     }
 
-    // ─── 📡 Core AutoOp Logic ───
-    public void notifySlaves(double value) {
-        System.out.println("🔔 notifySlaves → Reading: " + value + " | Slaves: " + slaves.size());
+    // ─── 📎 Linking Control ───
+    public boolean isAlreadyLinkedTo(Device device) {
+        return linkedDevices.contains(device);
+    }
 
-        for (Device device : slaves) {
-            if (!device.isAutomationEnabled()) {
-                System.out.println("⛔ Skipped (AutoOp disabled): " + device.getId());
-                continue;
-            }
+    void internalAddLinkedDevice(Device device) {
+        if (device != null && !linkedDevices.contains(device)) {
+            linkedDevices.add(device);
+            System.out.println("🔗 [Sensor] Linked: " + device.getName());
+        }
+    }
 
-            System.out.printf("🔍 %s [%s] | THRESHOLD: %.1f | Ref: %s%n",
-                    device.getId(),
-                    device.getClass().getSimpleName(),
-                    device.getAutoOnThreshold(),
-                    System.identityHashCode(device));
+    public void removeLinkedDevice(Device device) {
+        if (linkedDevices.remove(device)) {
+            System.out.printf("🧹 Removed '%s' from sensor '%s'%n", device.getId(), sensorId);
+        }
+    }
+//    public void clearSlaves() {
+//        slaveDevices.clear();
+//    }
 
-            if (value < device.getAutoOnThreshold()) {
+    public List<Device> getLinkedDevice() {
+        return Collections.unmodifiableList(linkedDevices);
+    }
+
+    public int getLinkedDevicesCount() {
+        return linkedDevices.size();
+    }
+
+    // ─── 📡 Automation ───
+    public void notifyLinkedDevices(double value) {
+        System.out.println("🔔 Notifying " + linkedDevices.size() + " linked devices");
+
+        for (Device device : linkedDevices) {
+            if (!device.isAutomationEnabled()) continue;
+
+            if (value < device.getAutoThreshold()) {
                 device.turnOn();
-                System.out.println("💡 Auto ON triggered for " + device.getName());
             } else {
                 device.turnOff();
-                System.out.println("🌙 Auto OFF triggered for " + device.getName());
             }
         }
     }
 
-    // ─── 🔁 Live I/O (abstract) ───
-    public abstract int readCurrentValue();
-    public abstract void simulateValue(int value);
+    // ─── 🎛 Sensor Mechanics ───
+    public abstract double readCurrentValue();
     public abstract double getCurrentReading();
+    public abstract void simulateValue(double value);
 
-    // ─── 📎 Linking ───
-    public void addSlave(Device device) {
-        slaves.add(device);
+    public void setCurrentValue(double value) {
+        this.currentValue = value;
+        updateTimestamp();
     }
 
-    public List<Device> getSlaves() {
-        return slaves;
-    }
     public void setSensorName(String name) {
         this.sensorName = name;
     }
 
-
-    // ─── 🧪 Simulation & Test Tools ───
-    public void testSensorBehavior() {
-        System.out.println("🔍 Starting test for sensor: " + sensorId);
-        int original = readCurrentValue();
-
-        try {
-            gradualChange(original, TEST_MIN_VALUE, TEST_STEP_COUNT);
-            Thread.sleep(TEST_HOLD_DURATION_MS);
-            gradualChange(TEST_MIN_VALUE, TEST_MAX_VALUE, TEST_STEP_COUNT);
-            Thread.sleep(TEST_HOLD_DURATION_MS);
-            gradualChange(TEST_MAX_VALUE, original, TEST_STEP_COUNT);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("⚠️ Sensor test interrupted.");
+    public void setUnit(MeasurementUnit unit) {
+        if (unit != null && unit != MeasurementUnit.UNKNOWN) {
+            this.unit = unit;
         }
-
-        System.out.println("✅ Sensor test completed.");
     }
 
-    protected void gradualChange(int from, int to, int steps) throws InterruptedException {
-        int step = (to - from) / steps;
+    // ─── 📊 Simulation Tools ───
+    public void testSensorBehavior() {
+        double original = readCurrentValue();
+        try {
+            gradualChange(original, TEST_MIN, TEST_STEPS);
+            Thread.sleep(TEST_HOLD);
+            gradualChange(TEST_MIN, TEST_MAX, TEST_STEPS);
+            Thread.sleep(TEST_HOLD);
+            gradualChange(TEST_MAX, original, TEST_STEPS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    protected void gradualChange(double from, double to, int steps) throws InterruptedException {
+        double step = (to - from) / steps;
         for (int i = 0; i <= steps; i++) {
-            int value = from + i * step;
+            double value = from + i * step;
             simulateValue(value);
-            notifySlaves(value);
+            notifyLinkedDevices(value);
             updateTimestamp();
             Thread.sleep(100);
         }
     }
 
-    // ─── ⏳ Timestamp Logic ───
+    // ─── ⏱ Timestamping ───
     public void updateTimestamp() {
-        this.updatedTimestamp = ZonedDateTime.now(clock);
-    }
-
-    public void markAsRemoved() {
-        this.removedTimestamp = ZonedDateTime.now(clock);
+        updatedTimestamp = ZonedDateTime.now(clock);
     }
 
     public String getCreatedTimestamp() {
-        return (createdTimestamp != null) ? createdTimestamp.toString() : "N/A";
+        return createdTimestamp.toString();
     }
 
     public String getUpdatedTimestamp() {
@@ -133,7 +143,7 @@ public abstract class Sensor implements Runnable {
         return (removedTimestamp != null) ? removedTimestamp.toString() : "N/A";
     }
 
-    // ─── 📖 Getters ───
+    // ─── 📖 Accessors ───
     public String getSensorId() {
         return sensorId;
     }
@@ -146,15 +156,15 @@ public abstract class Sensor implements Runnable {
         return type;
     }
 
-    public String getUnit() {
+    public MeasurementUnit getUnit() {
         return unit;
     }
 
-    public int getCurrentValue() {
+    public double getCurrentValue() {
         return currentValue;
     }
 
-    // ─── ☎️ Runnable Defaults ───
+    // ─── ☎️ Runnable & Debug ───
     @Override
     public void run() {
         testSensorBehavior();
@@ -162,14 +172,19 @@ public abstract class Sensor implements Runnable {
 
     @Override
     public String toString() {
-        return String.format("%s | %s | %s | %d %s",
-                getClass().getSimpleName(), sensorId, sensorName, currentValue, unit);
+        return String.format("%s | %s | %s | %.1f %s", getClass().getSimpleName(), sensorId, sensorName, currentValue, unit);
+    }
+    public final void linkLinkedDevice(Device device) {
+        System.out.println(" linking to device: " + device.getId());
+
+        if (device != null && !linkedDevices.contains(device)) {
+            internalAddLinkedDevice(device);
+        }
     }
 
-    // 🧪 Test Constants
-    protected static final int DEFAULT_TEST_START_VALUE = 2000;
-    protected static final int TEST_MIN_VALUE = 0;
-    protected static final int TEST_MAX_VALUE = 4096;
-    protected static final int TEST_STEP_COUNT = 20;
-    protected static final int TEST_HOLD_DURATION_MS = 5000;
+    // ─── 🧪 Constants ───
+    protected static final int TEST_MIN = 0;
+    protected static final int TEST_MAX = 4096;
+    protected static final int TEST_STEPS = 20;
+    protected static final int TEST_HOLD = 3000;
 }

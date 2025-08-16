@@ -50,4 +50,13 @@ public enum SmartLightEffect {
     public String toString() {
         return name() + " — " + description;
     }
+    public static SmartLightEffect fromLabel(String label) {
+        for (SmartLightEffect effect : values()) {
+            if (effect.name().equalsIgnoreCase(label)) {
+                return effect;
+            }
+        }
+        return SmartLightEffect.NONE; // Fallback if label not recognized
+    }
+
 }

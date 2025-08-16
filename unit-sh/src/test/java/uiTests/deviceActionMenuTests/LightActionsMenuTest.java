@@ -3,7 +3,6 @@ package uiTests.deviceActionMenuTests;
 import devices.Light;
 import org.junit.jupiter.api.*;
 import ui.deviceActionMenu.LightActionsMenu;
-import ui.AutoOpController;
 
 import java.io.*;
 import java.util.Scanner;

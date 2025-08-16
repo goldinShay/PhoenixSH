@@ -1,3 +1,4 @@
+import autoOp.AutoOpManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import storage.DeviceStorage;
@@ -103,13 +104,13 @@ class SmartHomeSystemTest {
         try (var deviceMock = mockStatic(DeviceStorage.class);
              var sensorMock = mockStatic(SensorStorage.class);
              var creatorMock = mockStatic(XlCreator.class);
-             var autoOpMock = mockStatic(utils.AutoOpManager.class)) {
+             var autoOpMock = mockStatic(AutoOpManager.class)) {
 
             deviceMock.when(DeviceStorage::initialize).thenAnswer(invocation -> null);
             sensorMock.when(SensorStorage::loadSensorsFromExcel).thenAnswer(invocation -> null);
             creatorMock.when(() -> XlCreator.loadSensorLinks(any(), any())).thenAnswer(invocation -> null);
-            autoOpMock.when(utils.AutoOpManager::restoreMemoryLinks).thenAnswer(invocation -> null);
-            autoOpMock.when(utils.AutoOpManager::reevaluateAllSensors).thenAnswer(invocation -> null);
+            autoOpMock.when(AutoOpManager::restoreMemoryLinks).thenAnswer(invocation -> null);
+            autoOpMock.when(AutoOpManager::reevaluateAllSensors).thenAnswer(invocation -> null);
 
             Method method = SmartHomeSystem.class.getDeclaredMethod("initializeSystem");
             method.setAccessible(true);
@@ -117,8 +118,8 @@ class SmartHomeSystemTest {
 
             deviceMock.verify(DeviceStorage::initialize);
             sensorMock.verify(SensorStorage::loadSensorsFromExcel);
-            autoOpMock.verify(utils.AutoOpManager::restoreMemoryLinks);
-            autoOpMock.verify(utils.AutoOpManager::reevaluateAllSensors);
+            autoOpMock.verify(AutoOpManager::restoreMemoryLinks);
+            autoOpMock.verify(AutoOpManager::reevaluateAllSensors);
         }
     }
 

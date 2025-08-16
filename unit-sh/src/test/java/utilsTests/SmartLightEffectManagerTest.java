@@ -26,7 +26,7 @@ class SmartLightEffectManagerTest {
         Input.setScanner(new Scanner(new ByteArrayInputStream(simulatedInput.getBytes(StandardCharsets.UTF_8))));
 
         SmartLight smartMock = mock(SmartLight.class);
-        when(smartMock.getEffect()).thenReturn(SmartLightEffect.NONE);
+        when(smartMock.getLiteFx()).thenReturn(SmartLightEffect.NONE);
 
         SmartLightEffectManager.handleEffectToggle(smartMock);
 
@@ -36,7 +36,7 @@ class SmartLightEffectManagerTest {
     @Test
     void whenEffectIsActive_thenToggleDisablesIt() {
         SmartLight smartMock = mock(SmartLight.class);
-        when(smartMock.getEffect()).thenReturn(SmartLightEffect.FIRE);
+        when(smartMock.getLiteFx()).thenReturn(SmartLightEffect.FIRE);
 
         SmartLightEffectManager.handleEffectToggle(smartMock);
 

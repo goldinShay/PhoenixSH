@@ -4,7 +4,7 @@ import devices.Dryer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import ui.AutoOpController;
+import autoOp.AutoOpController;
 import ui.deviceActionMenu.DryerActionsMenu;
 
 import java.io.ByteArrayInputStream;

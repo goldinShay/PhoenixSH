@@ -1,8 +1,12 @@
 package ui.gui;
 
+import devices.DeviceType;
+import devices.actions.LiveDeviceState;
+import storage.DeviceStorage;
+import ui.gui.devicesListPages.ChooseLightsUpdatePage;
+
 import javax.swing.*;
 import java.awt.*;
-import ui.gui.devicesListPages.ChooseLightToUpdatePage;
 
 public class ChooseDevice4UpdatePage extends JPanel {
     public static final int PAGE_NUMBER = 112;
@@ -11,26 +15,33 @@ public class ChooseDevice4UpdatePage extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.DARK_GRAY);
 
-        // === Top Display Area ===
-        JPanel displayPanel = new JPanel();
-        displayPanel.setBackground(Color.BLACK);
+        // === Title ===
+        JPanel displayPanel = new JPanel(new GridLayout(1, 1));
         displayPanel.setPreferredSize(new Dimension(800, 120));
-        displayPanel.setLayout(new GridLayout(1, 1));
-        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Choose Device / Sensor",
-                0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
+        displayPanel.setBackground(Color.BLACK);
+        displayPanel.setBorder(BorderFactory.createTitledBorder(null,
+                "Choose Device / Sensor", 0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
         JLabel titleLabel = new JLabel("📟 Select Category to Update", JLabel.CENTER);
         titleLabel.setForeground(Color.LIGHT_GRAY);
         titleLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
         displayPanel.add(titleLabel);
 
-        // === Center Button Grid ===
+        // === Center Buttons ===
         JPanel centerPanel = new JPanel(new GridLayout(2, 2, 40, 40));
         centerPanel.setBackground(Color.DARK_GRAY);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(60, 80, 60, 80));
 
         centerPanel.add(createCategoryButton("LIGHT", () -> {
-            PageNavigator.registerPage(120, new ChooseLightToUpdatePage(0));
+            DeviceStorage.reloadFromExcel(); // 🔄 FIRST: Fresh data in memory
+            DeviceStorage.getDevices().values().forEach(device -> {
+                if (device.isOn()) {
+                    LiveDeviceState.turnOn(device);
+                } else {
+                    LiveDeviceState.turnOff(device);
+                }
+            });
+            ChooseLightsUpdatePage page = ChooseLightsUpdatePage.loadFresh(0, 120, DeviceType.LIGHT, DeviceType.SMART_LIGHT);            PageNavigator.registerPage(120, page);
             PageNavigator.goToPage(120);
         }));
 
@@ -51,7 +62,7 @@ public class ChooseDevice4UpdatePage extends JPanel {
         footer.setBackground(Color.BLACK);
         footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
 
-        JLabel pageLabel = new JLabel(String.format("Page %03d", PAGE_NUMBER));
+        JLabel pageLabel = new JLabel("Page " + PAGE_NUMBER);
         pageLabel.setForeground(Color.GREEN);
         pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
@@ -73,7 +84,7 @@ public class ChooseDevice4UpdatePage extends JPanel {
         footer.add(pageLabel, BorderLayout.WEST);
         footer.add(navButtonPanel, BorderLayout.EAST);
 
-        // === Layout Assembly ===
+        // === Final Assembly ===
         add(displayPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);

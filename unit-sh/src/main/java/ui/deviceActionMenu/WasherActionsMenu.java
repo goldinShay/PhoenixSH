@@ -3,7 +3,7 @@ package ui.deviceActionMenu;
 import devices.Device;
 import devices.WashingMachine;
 import devices.actions.WashingMachineAction;
-import ui.AutoOpController;
+import autoOp.AutoOpController;
 
 import java.util.Scanner;
 

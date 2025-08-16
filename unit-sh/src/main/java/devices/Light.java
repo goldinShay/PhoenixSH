@@ -67,8 +67,9 @@ public class Light extends Device {
     }
 
     // 🟢 Optional markers for AutoOp toggling (logs only)
+    @Override
     public void enableAutoMode() {
-        System.out.println("🔄 Auto Mode Enabled for " + getName());
+        System.out.println("🔄 AutoOp Enabled for " + getName());
     }
 
     public void disableAutoMode() {

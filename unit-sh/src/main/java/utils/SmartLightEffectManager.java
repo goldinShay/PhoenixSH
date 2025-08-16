@@ -8,7 +8,7 @@ import devices.actions.SmartLightEffect;
 public class SmartLightEffectManager {
 
     public static void handleEffectToggle(SmartLight smart) {
-        if (smart.getEffect() == SmartLightEffect.NONE) {
+        if (smart.getLiteFx() == SmartLightEffect.NONE) {
             System.out.println("\n🌈 Available Effects:");
             SmartLightEffect[] effects = SmartLightEffect.values();
             for (int i = 0; i < effects.length; i++) {
@@ -17,9 +17,9 @@ public class SmartLightEffectManager {
             }
 
             int choice = Input.getInt("Pick effect: ", 1, effects.length - 1);
-            smart.applyEffect(effects[choice - 1]);
+            smart.setLiteFx(effects[choice - 1]);
         } else {
-            smart.applyEffect(SmartLightEffect.NONE);
+            smart.setLiteFx(SmartLightEffect.NONE);
             System.out.println("🛑 Effect disabled.");
         }
     }

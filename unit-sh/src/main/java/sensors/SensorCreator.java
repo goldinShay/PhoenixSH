@@ -4,5 +4,5 @@ import java.time.Clock;
 
 @FunctionalInterface
 public interface SensorCreator {
-    Sensor create(SensorType type, String id, String name, String unit, int defaultVal, Clock clock);
+    Sensor create(SensorType type, String id, String name, MeasurementUnit unit, double currentValue, Clock clock);
 }

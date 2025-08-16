@@ -4,13 +4,10 @@ import devices.Device;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import sensors.Sensor;
-import storage.ExcelDevicePersistence;
 import storage.SensorStorage;
-import storage.XlCreator;
-import ui.AutoOpUnlinker;
+import autoOp.AutoOpUnlinker;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.mockito.Mockito.*;
 
@@ -33,7 +30,7 @@ class AutoOpUnlinkerTest {
 
         @SuppressWarnings("unchecked")
         List<Device> mockSlaves = (List<Device>) mock(List.class);
-        when(sensor.getSlaves()).thenReturn(mockSlaves);
+        when(sensor.getLinkedDevice()).thenReturn(mockSlaves);
 
 
         SensorStorage.getSensors().put("S1", sensor);
@@ -52,7 +49,7 @@ class AutoOpUnlinkerTest {
         verify(device).setAutomationSensorId(null);
         verify(device).setLinkedSensor(null);
         verify(device).disableAutoMode();
-        verify(sensor.getSlaves()).remove(device);
+        verify(sensor.getLinkedDevice()).remove(device);
         verify(persistence).updateDevice(device);
         verify(persistence).removeSensorLink("D1");
     }
