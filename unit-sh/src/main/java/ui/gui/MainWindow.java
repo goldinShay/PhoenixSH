@@ -1,11 +1,11 @@
 package ui.gui;
 
+import devices.Device;
 import devices.DeviceType;
 import storage.xlc.XlWorkbookUtils;
-import ui.gui.devicesListPages.ChooseLightsUpdatePage;
-import ui.gui.guiDeviceControl.LightControlPage;
 import ui.gui.managers.ButtonMapManager;
 import ui.gui.managers.GuiStateManager;
+import ui.gui.pages.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,6 +37,7 @@ public class MainWindow extends JFrame {
         PageNavigator.registerPage(110, new AddDeviceMenuPage());
         PageNavigator.registerPage(112, new ChooseDevice4UpdatePage());
         PageNavigator.registerPage(200, new ChooseDeviceCtrlPage());
+        PageNavigator.registerPage(300, new AutoOpControlPage());
 
         // === Initial Page ===
         SwingUtilities.invokeLater(() -> {

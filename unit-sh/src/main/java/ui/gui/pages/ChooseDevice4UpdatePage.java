@@ -1,8 +1,9 @@
-package ui.gui;
+package ui.gui.pages;
 
 import devices.DeviceType;
 import devices.actions.LiveDeviceState;
 import storage.DeviceStorage;
+import ui.gui.PageNavigator;
 import ui.gui.devicesListPages.ChooseLightsUpdatePage;
 
 import javax.swing.*;

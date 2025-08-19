@@ -1,3 +1,4 @@
+import autoOp.AutoOpLinker;
 import devices.Device;
 import devices.actions.LiveDeviceState;
 import scheduler.Scheduler;
@@ -74,6 +75,7 @@ public class SmartHomeSystem {
 
             DeviceStorage.initialize();              // ✅ Devices loaded here
             SensorStorage.loadSensorsFromExcel();
+            AutoOpLinker.relinkLinkedDevicesToSensors(); // 🔁 restore links
             XlTaskSchedulerManager.loadTasks();
 
             linkDevicesAndSensors();

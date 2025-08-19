@@ -1,4 +1,4 @@
-package ui.gui;
+package ui.gui.pages;
 
 import devices.Device;
 import devices.DeviceFactory;
@@ -8,6 +8,7 @@ import devices.actions.LiveDeviceState;
 import sensors.SensorType;
 import storage.DeviceStorage;
 import storage.XlCreator;
+import ui.gui.PageNavigator;
 import ui.gui.managers.GuiStateManager;
 import utils.ClockUtil;
 import utils.DeviceIdManager;

@@ -70,7 +70,7 @@ public final class AutoOpLinker {
         }
     }
 
-    private static boolean linkDeviceToSensor(Device device, Sensor sensor) {
+    public static boolean linkDeviceToSensor(Device device, Sensor sensor) {
         if (device == null || sensor == null) return false;
         if (sensor.isAlreadyLinkedTo(device)) {
             System.out.println("🔄 Device already linked to sensor.");
@@ -175,6 +175,7 @@ public final class AutoOpLinker {
         }
     }
     public static void relinkLinkedDevicesToSensors() {
+        System.out.println("was here for a sec");
         Map<String, Sensor> sensors = SensorStorage.getSensors();
         Map<String, Device> devices = DeviceStorage.getDevices();
 

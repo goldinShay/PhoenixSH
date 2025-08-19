@@ -31,7 +31,7 @@ public class PageNavigator {
     }
 
     /**
-     * Registers a new page with a specific ID. Ignores duplicates.
+     * Registers a new page with a specific ID. Ignore duplicates.
      */
     public static void registerPage(int pageNumber, JPanel page) {
         String pageKey = "PAGE_" + pageNumber;

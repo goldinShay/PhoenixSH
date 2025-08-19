@@ -1,4 +1,6 @@
-package ui.gui;
+package ui.gui.pages;
+
+import ui.gui.PageNavigator;
 
 import javax.swing.*;
 import java.awt.*;

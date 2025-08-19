@@ -4,6 +4,7 @@ import devices.Device;
 import devices.actions.LiveDeviceState;
 import storage.xlc.XlDeviceManager;
 import ui.gui.PageNavigator;
+import ui.gui.managers.GuiAutoOpManager;
 import ui.gui.managers.GuiStateManager;
 import ui.gui.managers.GuiUtils;
 import utils.Theme;
@@ -78,10 +79,27 @@ public class LightControlPage extends JPanel {
         }));
 
         controlPanel.add(createActionButton("AutoOp", () -> {
-            boolean enabled = !device.isAutomationEnabled();
-            device.setAutomationEnabled(enabled);
-            System.out.println("🔁 AutoOp " + (enabled ? "enabled" : "disabled") + " for " + device.getName());
-            GuiStateManager.refreshDeviceControlPage(device); // ✅ Refresh page after toggle
+            System.out.println("🔁 AutoOp panel requested for " + device.getName());
+
+            // ✅ Use 300+ range for AutoOp pages
+            int pageId = 300 + Integer.parseInt(device.getId().replaceAll("[^0-9]", ""));
+
+            // ✅ Wrap GuiAutoOpManager with footer
+            JPanel wrappedPanel = new JPanel(new BorderLayout());
+            wrappedPanel.setBackground(Theme.BACKGROUND_DARK);
+
+            // Optional: constrain center height
+            JPanel centerWrapper = new JPanel(new BorderLayout());
+            centerWrapper.setBackground(Theme.BACKGROUND_DARK);
+            centerWrapper.add(new GuiAutoOpManager(device), BorderLayout.CENTER);
+
+            wrappedPanel.add(centerWrapper, BorderLayout.CENTER);
+            wrappedPanel.add(createFooter(pageId), BorderLayout.SOUTH);
+
+            if (!PageNavigator.isPageRegistered(pageId)) {
+                PageNavigator.registerPage(pageId, wrappedPanel);
+            }
+            PageNavigator.goToPage(pageId);
         }));
 
         controlPanel.add(createActionButton("TEST LIGHT", () -> {
@@ -138,6 +156,37 @@ public class LightControlPage extends JPanel {
 
         return footer;
     }
+    private JPanel createFooter(int pageId) {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(Color.BLACK);
+        footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+
+        JLabel pageLabel = new JLabel("Page " + pageId);
+        pageLabel.setForeground(Color.GREEN);
+        pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
+
+        JButton backBtn = new JButton("←");
+        backBtn.setFont(new Font("Arial", Font.PLAIN, 12));
+        backBtn.setToolTipText("Go back");
+        backBtn.addActionListener(e -> {
+            GuiStateManager.refreshDeviceMatrix();
+            PageNavigator.goToPage(120); // Back to matrix
+        });
+
+        JButton homeBtn = new JButton("Home");
+        homeBtn.setFont(new Font("Arial", Font.PLAIN, 12));
+        homeBtn.addActionListener(e -> PageNavigator.goToPage(50));
+
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        navPanel.setBackground(Color.BLACK);
+        navPanel.add(backBtn);
+        navPanel.add(homeBtn);
+
+        footer.add(pageLabel, BorderLayout.WEST);
+        footer.add(navPanel, BorderLayout.EAST);
+
+        return footer;
+    }
 
     private void refreshStatusLabel() {
         this.device = XlDeviceManager.getDeviceById(device.getId()); // ✅ Refresh device state
@@ -145,11 +194,12 @@ public class LightControlPage extends JPanel {
         statusLabel.setForeground(getStatusColor());
     }
 
-    private String getStatusText() {
+    public String getStatusText() {
         return LiveDeviceState.isOn(device) ? "🟢 ON" : "🔴 OFF";
     }
 
-    private Color getStatusColor() {
+    public Color getStatusColor() {
         return LiveDeviceState.isOn(device) ? Color.GREEN : Color.RED;
     }
+
 }

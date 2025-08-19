@@ -1,16 +1,14 @@
-package ui.gui;
+package ui.gui.pages;
 
-import devices.DeviceType;
-import storage.DeviceStorage;
-import ui.gui.devicesListPages.ChooseLightsUpdatePage;
+import ui.gui.PageNavigator;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class ChooseDeviceCtrlPage extends JPanel {
-    public static final int PAGE_NUMBER = 200;
+public class DeviceSettingsPage extends JPanel {
+    public static final int PAGE_NUMBER = 100;
 
-    public ChooseDeviceCtrlPage() {
+    public DeviceSettingsPage() {
         setLayout(new BorderLayout());
         setBackground(Color.DARK_GRAY);
 
@@ -19,10 +17,10 @@ public class ChooseDeviceCtrlPage extends JPanel {
         displayPanel.setBackground(Color.BLACK);
         displayPanel.setPreferredSize(new Dimension(800, 120));
         displayPanel.setLayout(new GridLayout(1, 1));
-        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Choose a Device",
+        displayPanel.setBorder(BorderFactory.createTitledBorder(null, "Device Settings", //<-- Menu page name
                 0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
-        JLabel placeholder = new JLabel("📟 Device Category Selection", JLabel.CENTER);
+        JLabel placeholder = new JLabel("📟 Devices and Sensors Registry", JLabel.CENTER);
         placeholder.setForeground(Color.LIGHT_GRAY);
         placeholder.setFont(new Font("Monospaced", Font.BOLD, 16));
         displayPanel.add(placeholder);
@@ -35,20 +33,13 @@ public class ChooseDeviceCtrlPage extends JPanel {
 
         Dimension squareSize = new Dimension(180, 180);
 
-        JButton lightsBtn = createMainButton("LIGHTS");
-        lightsBtn.addActionListener(e -> {
-            DeviceStorage.reloadFromExcel();
-            ChooseLightsUpdatePage page = ChooseLightsUpdatePage.loadFresh(0, 120, DeviceType.LIGHT, DeviceType.SMART_LIGHT);
-            PageNavigator.registerPage(120, page);
-            DeviceStorage.reloadFromExcel(); // 🔁 Refresh memory
-            PageNavigator.registerPage(120, ChooseLightsUpdatePage.loadFresh(0, 120, DeviceType.LIGHT, DeviceType.SMART_LIGHT));
-            PageNavigator.goToPage(120);
-        });
+        JButton addBtn = createMainButton("<html><center>ADD<br>Device</center></html>");
+        addBtn.addActionListener(e -> PageNavigator.goToPage(110)); // 🚀 Redirect to AddDeviceMenuPage
+        JButton updateBtn = createMainButton("<html><center>UPDATE<br>Device</center></html>");
+        updateBtn.addActionListener(e -> PageNavigator.goToPage(112)); // 🧭 Go to update category selector
+        JButton removeBtn = createMainButton("<html><center>REMOVE<br>Device</center></html>");
 
-        JButton utilsBtn = createMainButton("<html><center>HOUSE<br>UTILS</center></html>");
-        JButton securityBtn = createMainButton("SECURITY");
-
-        for (JButton btn : java.util.List.of(lightsBtn, utilsBtn, securityBtn)) {
+        for (JButton btn : java.util.List.of(addBtn, updateBtn, removeBtn)) {
             btn.setPreferredSize(squareSize);
             btn.setMinimumSize(squareSize);
             btn.setMaximumSize(squareSize);
@@ -57,11 +48,11 @@ public class ChooseDeviceCtrlPage extends JPanel {
         }
 
         centerPanel.add(Box.createHorizontalGlue());
-        centerPanel.add(lightsBtn);
+        centerPanel.add(addBtn);
         centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
-        centerPanel.add(utilsBtn);
+        centerPanel.add(updateBtn);
         centerPanel.add(Box.createRigidArea(new Dimension(30, 0)));
-        centerPanel.add(securityBtn);
+        centerPanel.add(removeBtn);
         centerPanel.add(Box.createHorizontalGlue());
 
         // === Footer ===
@@ -73,7 +64,7 @@ public class ChooseDeviceCtrlPage extends JPanel {
         pageLabel.setForeground(Color.GREEN);
         pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
-// Match the visual depth by nesting the button in a panel
+// ➕ Optional back button if needed later
         JPanel navButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         navButtonPanel.setBackground(Color.BLACK);
 
