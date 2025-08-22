@@ -65,25 +65,25 @@ public class AutoOpManager {
 
 
     // 🔗 Save a new AutoOp link to Excel
-    public static boolean persistLink(Device slave, Sensor master) {
+    public static boolean persistLink(Device linkedDevice, Sensor master) {
         boolean written;
 
-        if (slave instanceof SmartLight) {
-            written = SmartLightController.linkSensor((SmartLight) slave, master);
+        if (linkedDevice instanceof SmartLight) {
+            written = SmartLightController.linkSensor((SmartLight) linkedDevice, master);
         } else {
-            written = XlCreator.appendToSenseControl(slave, master);
+            written = XlCreator.appendToAutoOpManager(linkedDevice, master);
         }
         if (!written) {
-            System.out.println("⚠️ Failed to persist AutoOp link between " + slave.getName() + " and " + master.getSensorName());
+            System.out.println("⚠️ Failed to persist AutoOp link between " + linkedDevice.getName() + " and " + master.getSensorName());
             return false;
         }
-        System.out.println("💾 AutoOp link saved to Sense_Control sheet.");
+        System.out.println("💾 AutoOp link saved to Sens_Ctrl sheet.");
         return true;
     }
 
     // ❌ Remove a broken AutoOp link from Excel
-    public static void unlink(Device slave) {
-        XlCreator.removeFromSenseControl(slave.getId());
+    public static void unlink(Device linkedDevice) {
+        XlCreator.removeFromSensCtrl(linkedDevice.getId());
         System.out.println("🧹 AutoOp link removed from Excel.");
     }
 

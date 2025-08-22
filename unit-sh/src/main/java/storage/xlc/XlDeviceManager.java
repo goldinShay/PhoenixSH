@@ -177,7 +177,7 @@ public class XlDeviceManager {
     }
 
     public static boolean updateDevice(Device device) throws IOException {
-        return updateWorkbook((workbook, tasks, sheet, sensors, senseControl, smartControl) -> {
+        return updateWorkbook((workbook, tasks, sheet, sensors, sensCtrl, smartControl) -> {
             Map<DeviceSheetCommand, Integer> columnMap = DeviceSheetCommand.getColumnMap();
             boolean updated = false;
 
@@ -253,7 +253,7 @@ public class XlDeviceManager {
 
     public static boolean removeDevice(String deviceId) {
         try {
-            updateWorkbook((workbook, tasks, sheet, sensors, senseControl, smartControl) -> {
+            updateWorkbook((workbook, tasks, sheet, sensors, sensCtrl, smartControl) -> {
                 int lastRow = sheet.getLastRowNum();
                 for (int i = 1; i <= lastRow; i++) {
                     Row row = sheet.getRow(i);

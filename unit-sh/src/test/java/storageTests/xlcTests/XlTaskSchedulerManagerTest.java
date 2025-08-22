@@ -23,7 +23,7 @@ class XlTaskSchedulerManagerTest {
 
         try (Workbook wb = new XSSFWorkbook()) {
             // ✅ Create all required sheets
-            String[] sheets = { "Scheduled Tasks", "Devices", "Sensors", "Sense_Control" };
+            String[] sheets = { "Scheduled Tasks", "Devices", "Sensors", "Sens_Ctrl" };
 
             for (String name : sheets) {
                 Sheet sheet = wb.createSheet(name);

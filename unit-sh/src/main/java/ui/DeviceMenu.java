@@ -88,8 +88,8 @@ public class DeviceMenu {
                                     device.getAutoThreshold()
                             );
                             System.out.println(synced
-                                    ? "🔄 Sense_Control threshold synced (AUTO-OFF mirrored)."
-                                    : "⚠️ Failed to sync threshold to Sense_Control.");
+                                    ? "🔄 Sens_Ctrl threshold synced (AUTO-OFF mirrored)."
+                                    : "⚠️ Failed to sync threshold to Sens_Ctrl.");
                         }
 
                     } else if (SensorStorage.getSensors().containsKey(updateId)) {
@@ -152,7 +152,7 @@ public class DeviceMenu {
                         System.out.println("📋 Preparing to write control sheet entry:");
                         System.out.println("→ Device: " + (slave != null ? slave.getId() : "null"));
                         System.out.println("→ Sensor: " + (sensor != null ? sensor.getSensorId() : "null"));
-                        boolean updatedCtrl = XlAutoOpManager.appendToSenseControlSheet(slave, sensor);
+                        boolean updatedCtrl = XlAutoOpManager.appendToSensCtrlSheet(slave, sensor);
 
                         boolean allUpdated = updatedMemory && updatedSheet && updatedCtrl;
 

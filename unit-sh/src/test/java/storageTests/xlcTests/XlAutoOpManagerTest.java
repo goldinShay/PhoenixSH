@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class XlAutoOpManagerTest {
 
     private static Path tempFile;
-    private static final String SHEET_NAME = "Sense_Control";
+    private static final String SHEET_NAME = "Sens_Ctrl";
 
     @BeforeEach
     void setupWorkbook() throws IOException {
@@ -25,7 +25,7 @@ class XlAutoOpManagerTest {
 
         // 🔧 Initialize workbook with required sheet
         try (Workbook workbook = new XSSFWorkbook()) {
-            XlWorkbookUtils.createSheetWithHeaders(workbook, "Sense_Control",
+            XlWorkbookUtils.createSheetWithHeaders(workbook, "Sens_Ctrl",
                     "SLAVE_TYPE", "SLAVE_ID", "SENSOR_TYPE", "SENSOR_ID", "AUTO_ON", "AUTO_OFF");
 
             try (FileOutputStream fos = new FileOutputStream(tempFile.toFile())) {
@@ -43,7 +43,7 @@ class XlAutoOpManagerTest {
         Device light = new Light("LI999", "TestLight", ClockUtil.getClock(), false, 1500, 1450);
         Sensor sensor = new LightSensor("LIs999", "TestSensor", "lux", 1200, ClockUtil.getClock());
 
-        boolean result = XlAutoOpManager.appendToSenseControlSheet(light, sensor);
+        boolean result = XlAutoOpManager.appendToSensCtrlSheet(light, sensor);
         assertTrue(result, "Row should be appended");
 
         // Reload and check contents

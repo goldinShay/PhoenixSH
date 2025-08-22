@@ -62,7 +62,7 @@ class AutoOpManagerTest {
         when(slaveMock.getId()).thenReturn("D123");
 
         try (var staticMock = mockStatic(storage.XlCreator.class)) {
-            staticMock.when(() -> storage.XlCreator.removeFromSenseControl("D123")).thenReturn(true);
+            staticMock.when(() -> storage.XlCreator.removeFromSensCtrl("D123")).thenReturn(true);
             boolean success = AutoOpManager.unlink(slaveMock);
             assertTrue(success);
         }
@@ -71,7 +71,7 @@ class AutoOpManagerTest {
     @Test
     void whenPersistingLink_thenReturnsTrueOnSuccess() {
         try (var staticMock = mockStatic(storage.XlCreator.class)) {
-            staticMock.when(() -> storage.XlCreator.appendToSenseControl(slaveMock, sensorMock)).thenReturn(true);
+            staticMock.when(() -> storage.XlCreator.appendToAutoOpManager(slaveMock, sensorMock)).thenReturn(true);
             boolean success = AutoOpManager.persistLink(slaveMock, sensorMock);
             assertTrue(success);
         }

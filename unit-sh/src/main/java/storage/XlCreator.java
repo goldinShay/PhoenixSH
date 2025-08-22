@@ -23,7 +23,7 @@ public class XlCreator {
 
     private static final XlDeviceManager deviceManager = new XlDeviceManager();
     private static final XlSensorManager sensorManager = new XlSensorManager();
-    private static final XlAutoOpManager senseControlManager = new XlAutoOpManager();
+    private static final XlAutoOpManager XlAutoOpManager = new XlAutoOpManager();
     private static final XlTaskSchedulerManager schedulerManager = new XlTaskSchedulerManager();
     private static final XlSmartLightManager smartLightManager = new XlSmartLightManager();
     private static final String SENS_CTRL = "Sens_Ctrl";
@@ -36,7 +36,7 @@ public class XlCreator {
     private static Function<DeviceSensorPair, Boolean> senseAppender = null;
     private static Consumer<String> senseRemover = slaveId -> {
         // your removal logic here
-        senseControlManager.removeSensorLink(slaveId);
+        XlAutoOpManager.removeSensorLink(slaveId);
     };
 
     // ----- Hook Injectors -----
@@ -192,23 +192,23 @@ public class XlCreator {
     }
 
     // ----- Sense Control Delegates -----
-    public static boolean appendToSenseControl(Device slave, Sensor master) {
+    public static boolean appendToAutoOpManager(Device slave, Sensor master) {
         return (senseAppender != null) ? senseAppender.apply(new DeviceSensorPair(slave, master))
-                : senseControlManager.appendToSenseControlSheet(slave, master);
+                : XlAutoOpManager.appendToSensCtrlSheet(slave, master);
     }
 
-    public static void removeFromSenseControl(String slaveId) {
+    public static void removeFromSensCtrl(String slaveId) {
         if (senseRemover != null) {
             senseRemover.accept(slaveId);
         } else {
-            senseControlManager.removeSensorLink(slaveId);
+            XlAutoOpManager.removeSensorLink(slaveId);
         }
     }
 
 
     public boolean updateAutoOpThresholds(String deviceId, double unifiedThreshold, double ignoredOff) {
         // Feed same value for both ON and OFF fields
-        return senseControlManager.updateAutoOpThresholds(deviceId, unifiedThreshold, unifiedThreshold);
+        return XlAutoOpManager.updateAutoOpThresholds(deviceId, unifiedThreshold, unifiedThreshold);
     }
 
     public static void removeSensorLink(String slaveId) {

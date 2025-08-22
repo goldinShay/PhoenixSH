@@ -202,11 +202,11 @@ public class XlWorkbookUtils {
 
     @FunctionalInterface
     public interface MultiSheetConsumer {
-        void accept(Sheet tasks, Sheet devices, Sheet sensors, Sheet senseControl, Sheet smartLightControl) throws IOException;
+        void accept(Sheet tasks, Sheet devices, Sheet sensors, Sheet sensCtrl, Sheet smartLightControl) throws IOException;
     }
     @FunctionalInterface
     public interface WorkbookSheetConsumer {
-        void accept(Workbook workbook, Sheet tasks, Sheet devices, Sheet sensors, Sheet senseControl, Sheet smartLightCtrl)
+        void accept(Workbook workbook, Sheet tasks, Sheet devices, Sheet sensors, Sheet sensCtrl, Sheet smartLightCtrl)
                 throws IOException;
     }
 
@@ -224,11 +224,11 @@ public class XlWorkbookUtils {
             Sheet tasks           = ensureSheet(workbook, "Scheduled_Tasks", ScheduledTasksCommand.values());
             Sheet devices         = ensureSheet(workbook, "Devices", DeviceSheetCommand.values());
             Sheet sensors         = ensureSheet(workbook, "Sensors", SensorSheetCommand.values()); // if defined
-            Sheet senseControl    = ensureSheet(workbook, "AutoOp_Ctrl", null);
+            Sheet sens_Ctrl       = ensureSheet(workbook, "sens_Ctrl", null);
             Sheet smartLightCtrl  = ensureSheet(workbook, "Smart_Light_Control", null);
 
             // 🛠️ Pass the workbook and sheets to the consumer
-            consumer.accept(workbook, tasks, devices, sensors, senseControl, smartLightCtrl);
+            consumer.accept(workbook, tasks, devices, sensors, sens_Ctrl, smartLightCtrl);
 
             // 💾 Save changes
             System.out.println("📤 Writing workbook to: " + file);

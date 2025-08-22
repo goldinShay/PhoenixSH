@@ -23,11 +23,11 @@ public class XlAutoOpManager {
 
     public static void removeSensorLink(String slaveId) {
         try {
-            updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
-                for (Row row : senseControl) {
+            updateWorkbook((workbook, tasks, devices, sensors, sensCtrl, smartLightControl) -> {
+                for (Row row : sensCtrl) {
                     if (row.getRowNum() == 0) continue;
                     if (getCellValue(row, 0).equalsIgnoreCase(slaveId)) {
-                        senseControl.removeRow(row);
+                        sensCtrl.removeRow(row);
                         Log.debug("🗑️ Removed link for " + slaveId);
                         break;
                     }
@@ -83,7 +83,6 @@ public class XlAutoOpManager {
         }
     }
 
-
     public static boolean updateSensorValueInSheet(Sensor sensor) {
         try (FileInputStream fis = new FileInputStream(getFilePath().toFile());
              Workbook workbook = new XSSFWorkbook(fis)) {
@@ -113,8 +112,8 @@ public class XlAutoOpManager {
             return false;
         }
     }
-    public static boolean appendToSenseControlSheet(Device slave, Sensor master) {
-        return AutoOpLinker.SensorLinkManager(slave, master);
+    public static boolean appendToSensCtrlSheet(Device linkedDevice, Sensor master) {
+        return AutoOpLinker.SensorLinkManager(linkedDevice, master);
     }
 
 

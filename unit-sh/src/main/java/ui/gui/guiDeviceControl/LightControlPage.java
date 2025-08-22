@@ -2,6 +2,7 @@ package ui.gui.guiDeviceControl;
 
 import devices.Device;
 import devices.actions.LiveDeviceState;
+import services.DeviceTestService;
 import storage.xlc.XlDeviceManager;
 import ui.gui.PageNavigator;
 import ui.gui.managers.GuiAutoOpManager;
@@ -15,10 +16,12 @@ import java.awt.*;
 public class LightControlPage extends JPanel {
     private Device device;
     private final int currentPageNumber;
+
     private JLabel statusLabel;
+    private JLabel autoOpLabel;
 
     public LightControlPage(Device device, int pageNumber) {
-        this.device = XlDeviceManager.getDeviceById(device.getId()); // ✅ Always use fresh device state
+        this.device = XlDeviceManager.getDeviceById(device.getId());
         this.currentPageNumber = pageNumber;
 
         setLayout(new BorderLayout());
@@ -26,7 +29,7 @@ public class LightControlPage extends JPanel {
 
         add(createHeader(), BorderLayout.NORTH);
         add(createControlPanel(), BorderLayout.CENTER);
-        add(createFooter(), BorderLayout.SOUTH);
+        add(createFooter(currentPageNumber), BorderLayout.SOUTH);
     }
 
     private JPanel createHeader() {
@@ -36,8 +39,7 @@ public class LightControlPage extends JPanel {
         header.setBorder(BorderFactory.createTitledBorder(null, "Light Control Panel",
                 0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
-        String name = (device != null) ? device.getName() : "No Device";
-        JLabel nameLabel = new JLabel("💡 " + name, JLabel.LEFT);
+        JLabel nameLabel = new JLabel("💡 " + device.getName(), JLabel.LEFT);
         nameLabel.setForeground(Color.LIGHT_GRAY);
         nameLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
 
@@ -45,8 +47,8 @@ public class LightControlPage extends JPanel {
         statusLabel.setForeground(getStatusColor());
         statusLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
 
-        JLabel autoOpLabel = new JLabel(device.isAutomationEnabled() ? "⚙️ AutoOp ON" : "⚙️ AutoOp OFF", JLabel.CENTER);
-        autoOpLabel.setForeground(device.isAutomationEnabled() ? Color.GREEN : Color.RED);
+        autoOpLabel = new JLabel(getAutoOpText(), JLabel.CENTER);
+        autoOpLabel.setForeground(getAutoOpColor());
         autoOpLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
 
         header.add(nameLabel, BorderLayout.WEST);
@@ -57,38 +59,32 @@ public class LightControlPage extends JPanel {
     }
 
     private JPanel createControlPanel() {
-        JPanel controlPanel = new JPanel(new GridLayout(2, 3, 20, 20));
-        controlPanel.setBackground(Theme.BACKGROUND_DARK);
-        controlPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+        JPanel panel = new JPanel(new GridLayout(2, 3, 20, 20));
+        panel.setBackground(Theme.BACKGROUND_DARK);
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
 
-        controlPanel.add(createActionButton("TURN ON", () -> {
+        panel.add(createActionButton("TURN ON", () -> {
             device.turnOn();
             GuiUtils.syncGuiAfterDeviceUpdate(device);
             refreshStatusLabel();
         }));
 
-        controlPanel.add(createActionButton("TURN OFF", () -> {
+        panel.add(createActionButton("TURN OFF", () -> {
             device.turnOff();
             GuiUtils.syncGuiAfterDeviceUpdate(device);
             refreshStatusLabel();
         }));
 
-        controlPanel.add(createActionButton("SCHEDULER", () -> {
-            System.out.println("🗓️ Scheduler clicked for " + device.getName());
-            // PageNavigator.goToPage(...); // Add scheduler page if needed
-        }));
+        panel.add(createActionButton("SCHEDULER", () ->
+                System.out.println("🗓️ Scheduler clicked for " + device.getName())));
 
-        controlPanel.add(createActionButton("AutoOp", () -> {
+        panel.add(createActionButton("AutoOp", () -> {
             System.out.println("🔁 AutoOp panel requested for " + device.getName());
-
-            // ✅ Use 300+ range for AutoOp pages
             int pageId = 300 + Integer.parseInt(device.getId().replaceAll("[^0-9]", ""));
 
-            // ✅ Wrap GuiAutoOpManager with footer
             JPanel wrappedPanel = new JPanel(new BorderLayout());
             wrappedPanel.setBackground(Theme.BACKGROUND_DARK);
 
-            // Optional: constrain center height
             JPanel centerWrapper = new JPanel(new BorderLayout());
             centerWrapper.setBackground(Theme.BACKGROUND_DARK);
             centerWrapper.add(new GuiAutoOpManager(device), BorderLayout.CENTER);
@@ -100,18 +96,23 @@ public class LightControlPage extends JPanel {
                 PageNavigator.registerPage(pageId, wrappedPanel);
             }
             PageNavigator.goToPage(pageId);
+
+            refreshAutoOpLabel(); // ✅ Only update AutoOp label
         }));
 
-        controlPanel.add(createActionButton("TEST LIGHT", () -> {
-            device.testDevice();
+        panel.add(createActionButton("TEST LIGHT", () -> {
+            boolean success = DeviceTestService.testDeviceById(device.getId());
+            if (!success) {
+                JOptionPane.showMessageDialog(null, "Device is ON or not found. Turn it off before testing.");
+            }
         }));
 
-        controlPanel.add(createActionButton("UPDATE DEVICE", () -> {
+        panel.add(createActionButton("UPDATE DEVICE", () -> {
             PageNavigator.registerPage(215, new updateDeviceControlPage(device));
             PageNavigator.goToPage(215);
         }));
 
-        return controlPanel;
+        return panel;
     }
 
     private JButton createActionButton(String label, Runnable action) {
@@ -125,37 +126,6 @@ public class LightControlPage extends JPanel {
         return button;
     }
 
-    private JPanel createFooter() {
-        JPanel footer = new JPanel(new BorderLayout());
-        footer.setBackground(Color.BLACK);
-        footer.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
-
-        JLabel pageLabel = new JLabel("Page " + currentPageNumber);
-        pageLabel.setForeground(Color.GREEN);
-        pageLabel.setFont(new Font("Monospaced", Font.BOLD, 14));
-
-        JButton backBtn = new JButton("←");
-        backBtn.setFont(new Font("Arial", Font.PLAIN, 12));
-        backBtn.setToolTipText("Go back");
-        backBtn.addActionListener(e -> {
-            GuiStateManager.refreshDeviceMatrix(); // ✅ Refresh matrix
-            PageNavigator.goToPage(120);           // ✅ Navigate to matrix page
-        });
-
-        JButton homeBtn = new JButton("Home");
-        homeBtn.setFont(new Font("Arial", Font.PLAIN, 12));
-        homeBtn.addActionListener(e -> PageNavigator.goToPage(50));
-
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        navPanel.setBackground(Color.BLACK);
-        navPanel.add(backBtn);
-        navPanel.add(homeBtn);
-
-        footer.add(pageLabel, BorderLayout.WEST);
-        footer.add(navPanel, BorderLayout.EAST);
-
-        return footer;
-    }
     private JPanel createFooter(int pageId) {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.BLACK);
@@ -170,7 +140,7 @@ public class LightControlPage extends JPanel {
         backBtn.setToolTipText("Go back");
         backBtn.addActionListener(e -> {
             GuiStateManager.refreshDeviceMatrix();
-            PageNavigator.goToPage(120); // Back to matrix
+            PageNavigator.goToPage(120);
         });
 
         JButton homeBtn = new JButton("Home");
@@ -188,18 +158,33 @@ public class LightControlPage extends JPanel {
         return footer;
     }
 
-    private void refreshStatusLabel() {
-        this.device = XlDeviceManager.getDeviceById(device.getId()); // ✅ Refresh device state
+    // 🔄 Independent label refreshers
+    public void refreshStatusLabel() {
+        this.device = XlDeviceManager.getDeviceById(device.getId());
         statusLabel.setText(getStatusText());
         statusLabel.setForeground(getStatusColor());
     }
 
-    public String getStatusText() {
+    public void refreshAutoOpLabel() {
+        this.device = XlDeviceManager.getDeviceById(device.getId());
+        autoOpLabel.setText(getAutoOpText());
+        autoOpLabel.setForeground(getAutoOpColor());
+    }
+
+    // 🔍 Label text + color helpers
+    private String getStatusText() {
         return LiveDeviceState.isOn(device) ? "🟢 ON" : "🔴 OFF";
     }
 
-    public Color getStatusColor() {
+    private Color getStatusColor() {
         return LiveDeviceState.isOn(device) ? Color.GREEN : Color.RED;
     }
 
+    private String getAutoOpText() {
+        return device.isAutomationEnabled() ? "⚙️ AutoOp ON" : "⚙️ AutoOp OFF";
+    }
+
+    private Color getAutoOpColor() {
+        return device.isAutomationEnabled() ? Color.GREEN : Color.RED;
+    }
 }

@@ -41,7 +41,7 @@ public class XlTaskSchedulerManager {
 
     public static boolean addTask(String deviceId, String name, String action, String timestamp, String repeat) {
         try {
-            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+            return updateWorkbook((workbook, tasks, devices, sensors, sensCtrl, smartLightControl) -> {
                 int rowNum = getFirstAvailableRow(tasks);
                 Row row = tasks.createRow(rowNum);
                 setCell(row, 0, deviceId);
@@ -59,7 +59,7 @@ public class XlTaskSchedulerManager {
 
     public static boolean updateTask(String deviceId, String newTimestamp, String newRepeat) {
         try {
-            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+            return updateWorkbook((workbook, tasks, devices, sensors, sensCtrl, smartLightControl) -> {
                 for (Row row : tasks) {
                     if (row.getRowNum() == 0) continue;
                     if (getCellValue(row, 0).equals(deviceId)) {
@@ -78,7 +78,7 @@ public class XlTaskSchedulerManager {
 
     public static boolean deleteTask(String deviceId) {
         try {
-            return updateWorkbook((workbook, tasks, devices, sensors, senseControl, smartLightControl) -> {
+            return updateWorkbook((workbook, tasks, devices, sensors, sensCtrl, smartLightControl) -> {
                 int lastRow = tasks.getLastRowNum();
                 for (int i = 1; i <= lastRow; i++) {
                     Row row = tasks.getRow(i);

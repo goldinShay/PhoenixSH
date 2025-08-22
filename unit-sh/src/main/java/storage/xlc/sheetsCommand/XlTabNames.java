@@ -5,7 +5,7 @@ public enum XlTabNames {
     DEVICES("Devices"),
     SMART_LIGHT_CONTROL("Smart_Light_Control"),
     SENSORS("Sensors"),
-    SENSE_CONTROL("Sense_Control");
+    SENS_CTRL("Sens_Ctrl");
 
     private final String label;
 

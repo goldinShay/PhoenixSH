@@ -3,6 +3,7 @@ package ui;
 import devices.Device;
 import scheduler.Scheduler;
 import sensors.Sensor;
+import services.DeviceTestService;
 import storage.DeviceStorage;
 import storage.SensorStorage;
 import utils.ClockUtil;
@@ -72,20 +73,21 @@ public class Menu {
 
                     if (testId.equals("0")) break;
 
+                    boolean success = false;
+
                     if (DeviceStorage.getDevices().containsKey(testId)) {
-                        Device selected = DeviceStorage.getDevices().get(testId);
-                        if (selected.isOn()) {
-                            System.out.println("❌ Device is already ON. Turn it off before testing.");
-                        } else {
-                            selected.testDevice();
-                        }
+                        success = DeviceTestService.testDeviceById(testId);
                     } else if (SensorStorage.getSensors().containsKey(testId)) {
-                        Sensor selectedSensor = SensorStorage.getSensors().get(testId);
-                        selectedSensor.testSensorBehavior();
+                        success = DeviceTestService.testSensorById(testId);
                     } else {
                         System.out.println("❌ No device or sensor found with ID: " + testId);
                     }
+
+                    if (success) {
+                        System.out.println("✅ Test initiated successfully.");
+                    }
                 }
+
 
                 case "5" -> {
                     System.out.println("👋 Exiting Smart Home System. Goodbye!");

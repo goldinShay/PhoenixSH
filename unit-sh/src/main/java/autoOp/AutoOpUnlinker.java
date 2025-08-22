@@ -32,14 +32,14 @@ public class AutoOpUnlinker {
         Sensor sensor = SensorStorage.getSensors().get(sensorId);
         if (sensor != null) {
             sensor.removeLinkedDevice(device);
-            System.out.printf("🚪 Removed '%s' from sensor '%s' slave list%n",
+            System.out.printf("🚪 Removed '%s' from sensor '%s' linkedDevice list%n",
                     device.getId(), sensor.getSensorId());
         }
 
         if (persistence.removeSensorLink(device.getId())) {
-            System.out.println("🧻 Device mapping removed from Sense_Control sheet.");
+            System.out.println("🧻 Device mapping removed from Sens_Ctrl sheet.");
         } else {
-            System.out.println("⚠️ Failed to remove mapping from Sense_Control.");
+            System.out.println("⚠️ Failed to remove mapping from Sens_Ctrl.");
         }
 
         System.out.println("✅ AutoOp DISABLED for device: " + device.getName());

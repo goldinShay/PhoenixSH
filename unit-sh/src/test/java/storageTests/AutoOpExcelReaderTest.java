@@ -14,7 +14,7 @@ class AutoOpExcelReaderTest {
     @Test
     void whenSheetIsMissing_thenReturnsEmptyList() {
         Workbook workbook = mock(Workbook.class);
-        when(workbook.getSheet("Sense_Control")).thenReturn(null);
+        when(workbook.getSheet("Sens_Ctrl")).thenReturn(null);
 
         List<AutoOpExcelReader.AutoOpRecord> result = AutoOpExcelReader.readLinks(workbook);
         assertNotNull(result);
@@ -32,7 +32,7 @@ class AutoOpExcelReaderTest {
         Cell cell4 = mock(Cell.class); // AutoOn
         Cell cell5 = mock(Cell.class); // AutoOff
 
-        when(workbook.getSheet("Sense_Control")).thenReturn(sheet);
+        when(workbook.getSheet("Sens_Ctrl")).thenReturn(sheet);
         when(sheet.iterator()).thenReturn(List.of(row).iterator());
 
         when(row.getRowNum()).thenReturn(1);

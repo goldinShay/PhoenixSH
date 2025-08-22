@@ -28,7 +28,7 @@ class AddSensorMenuTest {
 
         tempFile = Files.createTempFile("sensor-menu-test-", ".xlsx");
         try (var wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
-            String[] sheets = { "Sensors", "Devices", "Sense_Control", "Scheduled Tasks" };
+            String[] sheets = { "Sensors", "Devices", "Sens_Ctrl", "Scheduled Tasks" };
             for (String name : sheets) wb.createSheet(name);
             try (var fos = new FileOutputStream(tempFile.toFile())) {
                 wb.write(fos);

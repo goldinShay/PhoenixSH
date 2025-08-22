@@ -2,7 +2,6 @@ package controllers;
 
 import autoOp.AutoOpUnlinker;
 import devices.SmartLight;
-import devices.actions.DeviceAction;
 import org.apache.poi.ss.usermodel.Workbook;
 import sensors.Sensor;
 import storage.DeviceStorage;
@@ -17,9 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SmartLightController {
 
@@ -97,7 +94,7 @@ public class SmartLightController {
         light.setAutomationSensorId(canonicalSensor.getSensorId());
         canonicalSensor.linkLinkedDevice(light);
 
-        boolean persisted = XlCreator.appendToSenseControl(light, canonicalSensor);
+        boolean persisted = XlCreator.appendToAutoOpManager(light, canonicalSensor);
         boolean updated = updateSmartLight(light);
 
         if (persisted && updated) {
@@ -155,7 +152,7 @@ public class SmartLightController {
 
         Workbook workbook = XlWorkbookUtils.loadWorkbook();
         boolean controlWritten = XlSmartLightManager.updateSmartLight(workbook, light);
-        boolean senseWritten = XlCreator.appendToSenseControl(light, sensor);
+        boolean senseWritten = XlCreator.appendToAutoOpManager(light, sensor);
 
         if (controlWritten && senseWritten) {
             System.out.printf("🔗 '%s' successfully linked to sensor '%s'.%n",
