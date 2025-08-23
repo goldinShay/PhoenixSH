@@ -5,6 +5,7 @@ import devices.DeviceType;
 import devices.actions.LiveDeviceState;
 import storage.DeviceStorage;
 import ui.gui.PageNavigator;
+import ui.gui.devicesListPages.ChooseLightsUpdatePage;
 import utils.Theme;
 
 import javax.swing.*;
@@ -23,25 +24,22 @@ public class ButtonMapManager {
     private static void goToPage(List<DeviceType> types, int pageIndex, int basePageId) {
         int pageId = basePageId + pageIndex;
 
-        // ✅ Rebuild the grid panel
-        JPanel gridPanel = renderGridFromDevices(getDevicesByTypes(types.toArray(new DeviceType[0])), pageIndex, basePageId, types);
+        // ✅ Rebuild full page, not just matrix
+        JComponent fullPage = ChooseLightsUpdatePage.loadFresh(pageIndex, basePageId, types.toArray(new DeviceType[0]));
 
-        // ✅ Register the page
-        PageNavigator.registerPage(pageId, gridPanel);
-
-        // ✅ Navigate to the page
+        PageNavigator.registerPage(pageId, fullPage);
         PageNavigator.goToPage(pageId);
 
-        // ✅ Repaint and revalidate
-        Component pageComponent = PageNavigator.getPage(pageId); // Make sure this method exists
-        if (pageComponent instanceof JPanel panel) {
-            panel.revalidate();
-            panel.repaint();
+        Component pageComponent = PageNavigator.getPage(pageId);
+        if (pageComponent != null) {
+            pageComponent.revalidate();
+            pageComponent.repaint();
             System.out.println("🧪 Revalidated and repainted page " + pageId);
         } else {
-            System.out.println("⚠️ Page " + pageId + " is not a JPanel, cannot repaint.");
+            System.out.println("⚠️ Page " + pageId + " not found.");
         }
     }
+
 
 
     // 🧠 Filter by type
@@ -56,7 +54,7 @@ public class ButtonMapManager {
     }
 
     // 🔧 Page renderer
-    public static JPanel renderPageForTypes(DeviceType[] types, int pageIndex, int basePageId) {
+    public static JComponent renderPageForTypes(DeviceType[] types, int pageIndex, int basePageId) {
         // Get all devices matching the given types
         List<Device> allFiltered = getDevicesByTypes(types);
 
@@ -80,16 +78,17 @@ public class ButtonMapManager {
         return renderGridFromDevices(devices, clampedPageIndex, basePageId, Arrays.asList(types));
     }
 
-    private static JPanel renderGridFromDevices(List<Device> devices, int pageIndex, int basePageId, List<DeviceType> types) {
-        int pageId = basePageId + pageIndex;
+    private static JScrollPane renderGridFromDevices(List<Device> devices, int pageIndex, int basePageId, List<DeviceType> types) {
+//        int pageId = basePageId + pageIndex;
 
+        // 🧱 Create grid panel
         JPanel gridPanel = new JPanel(new GridLayout(4, 3, 20, 20));
         gridPanel.setBackground(Theme.BACKGROUND_DARK);
         gridPanel.setBorder(BorderFactory.createEmptyBorder(40, 80, 40, 80));
-        gridPanel.setPreferredSize(new Dimension(800, 360));
 
         System.out.println("🧱 Grid built with devices: " + devices.stream().map(Device::getId).toList());
 
+        // 🔢 Add first 9 device buttons
         for (int i = 0; i < 9; i++) {
             if (i < devices.size()) {
                 Device device = devices.get(i);
@@ -101,23 +100,33 @@ public class ButtonMapManager {
             }
         }
 
-        // ← Navigation button
+        // ⬅️ Navigation button
         gridPanel.add(createNavButton("←", pageIndex > 0, () -> goToPage(types, pageIndex - 1, basePageId)));
 
-        // 10th device button
+        // 🔟 10th device button
         if (devices.size() >= 10) {
             Device device = devices.get(9);
             JButton button = GuiStateManager.getButtonForDevice(device.getId());
-            gridPanel.add(button != null ? button : createNameButton(device, 9));
+            JButton clone = button != null ? cloneButton(button, device) : createNameButton(device, 9);
+            gridPanel.add(clone);
         } else {
             gridPanel.add(createPlaceholder());
         }
 
-        // → Navigation button
-        gridPanel.add(createNavButton("→", hasNextPage(types, pageIndex), () -> goToPage(types, pageIndex + 1, basePageId)));
+        // ➡️ Navigation button
+        boolean hasMore = devices.size() == PAGE_SIZE;
+        gridPanel.add(createNavButton("→", hasMore, () -> goToPage(types, pageIndex + 1, basePageId)));
 
-        return gridPanel;
+        // 🧭 Wrap in scroll pane
+        JScrollPane scrollPane = new JScrollPane(gridPanel);
+        scrollPane.setPreferredSize(new Dimension(800, 360));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        return scrollPane;
     }
+
 
     private static JButton cloneButton(JButton original, Device device) {
         JButton clone = new JButton(original.getText());

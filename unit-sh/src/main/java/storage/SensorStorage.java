@@ -83,9 +83,8 @@ public class SensorStorage {
                     String valueStr = XlUtils.getCellValue(row, columnMap.get(SensorSheetCommand.CURRENT_VALUE));
 
                     SensorType type = SensorType.valueOf(typeStr.trim().toUpperCase());
-                    MeasurementUnit unit = MeasurementUnit.valueOf(unitStr.trim().toUpperCase());
-                    int value = (int) Double.parseDouble(valueStr);
-
+                    MeasurementUnit unit = MeasurementUnit.fromString(unitStr.trim());
+                    double value = Double.parseDouble(valueStr);
                     Sensor existing = existingSensors.get(id);
 
                     if (existing != null) {

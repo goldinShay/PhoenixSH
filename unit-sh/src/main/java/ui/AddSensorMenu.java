@@ -58,7 +58,6 @@ public class AddSensorMenu {
         }
     }
 
-
     private static SensorType chooseSensorType(Scanner scanner) {
         System.out.println("\nSelect Sensor Type:");
         SensorType[] types = SensorType.values();

@@ -45,8 +45,8 @@ public class XlSensorManager {
                     String valueStr  = getCellValue(row, columnMap.get(SensorSheetCommand.CURRENT_VALUE));
 
                     SensorType type = SensorType.valueOf(typeStr.trim().toUpperCase());
-                    MeasurementUnit unit = MeasurementUnit.valueOf(unitStr.trim().toUpperCase());
-                    int value = (int) Double.parseDouble(valueStr);
+                    MeasurementUnit unit = MeasurementUnit.fromString(unitStr.trim());
+                    double value = Double.parseDouble(valueStr);
 
                     Sensor sensor = SensorFactory.createSensor(type, id, name, unit, value, clock);
                     loadedSensors.put(id, sensor);

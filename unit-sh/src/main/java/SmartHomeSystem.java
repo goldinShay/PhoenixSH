@@ -75,6 +75,8 @@ public class SmartHomeSystem {
 
             DeviceStorage.initialize();              // ✅ Devices loaded here
             SensorStorage.loadSensorsFromExcel();
+            Set<String> sensorIds = SensorStorage.getSensors().keySet();
+            DeviceIdManager.getInstance().addKnownIds(sensorIds);
             AutoOpLinker.relinkLinkedDevicesToSensors(); // 🔁 restore links
             XlAutoOpManager.restoreSensorLinks();
             for (Device device : DeviceStorage.getAllDevices().values()) {
@@ -88,7 +90,7 @@ public class SmartHomeSystem {
             GuiStateManager.refreshDeviceMatrix();   // ✅ Buttons registered here
 
             // ✅ NOW the matrix is ready — build and register page 120
-            JPanel lightPage = ButtonMapManager.renderPageForTypes(
+            JComponent lightPage = ButtonMapManager.renderPageForTypes(
                     new DeviceType[]{DeviceType.LIGHT}, 0, 120
             );
             PageNavigator.registerPage(120, lightPage);

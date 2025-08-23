@@ -2,6 +2,7 @@ package ui.deviceActionMenu;
 
 import devices.Device;
 import devices.Thermostat;
+import autoOp.AutoOpController;
 
 import java.util.Scanner;
 
@@ -13,7 +14,7 @@ public class ThermostatActionsMenu {
             return;
         }
 
-        Scanner scanner = new Scanner(System.in); // ✅ now created dynamically per call
+        Scanner scanner = new Scanner(System.in);
 
         while (true) {
             System.out.println("\n=== Thermostat Actions ===");
@@ -21,7 +22,8 @@ public class ThermostatActionsMenu {
             System.out.println("1 - Set Default Temp (25°C)");
             System.out.println("2 - Increase Temp (+1°C)");
             System.out.println("3 - Decrease Temp (-1°C)");
-            System.out.println("4 - Back");
+            System.out.println("4 - Enable AutoOp");
+            System.out.println("5 - Back");
             System.out.print("Choose an option: ");
 
             String input = scanner.nextLine().trim();
@@ -40,10 +42,14 @@ public class ThermostatActionsMenu {
                     System.out.println("🌡️ Decreased to " + thermostat.getUserTemp() + "°C.");
                 }
                 case "4" -> {
+                    System.out.println("🔗 Launching AutoOp setup for thermostat...");
+                    AutoOpController.display(thermostat, scanner);
+                }
+                case "5" -> {
                     System.out.println("↩️ Back to device control menu.");
                     return;
                 }
-                default -> System.out.println("❌ Invalid option. Please choose 1-4.");
+                default -> System.out.println("❌ Invalid option. Please choose 1-5.");
             }
         }
     }

@@ -117,20 +117,6 @@ public class DeviceMenu {
                             }
                         }
 
-                        // 🔗 Fallback slave linkage BEFORE simulation
-                        // 🔗 Fallback slave linkage BEFORE simulation
-//                        Device linkedSlave = DeviceStorage.getLinkedDevice(sensor.getSensorId());
-//                        if (linkedSlave == null) {
-//                            Device fallbackSlave = DeviceStorage.getDevices().get("SL001"); // Update with your actual slave ID
-//                            if (fallbackSlave != null) {
-//                                sensor.linkSlave(fallbackSlave); // ✅ Clean, authorized, and safe
-//                                DeviceStorage.linkSensorToDevice(fallbackSlave.getId(), sensor); // 🔁 Enables reverse lookup
-//                                System.out.println("🔄 Fallback slave " + fallbackSlave.getId() + " linked to sensor " + sensor.getSensorId());
-//                            } else {
-//                                System.out.println("⚠️ No fallback device found. Sensor broadcast may be incomplete.");
-//                            }
-//                        }
-
                         if (!defaultStr.isEmpty()) {
                             try {
                                 int val = Integer.parseInt(defaultStr);

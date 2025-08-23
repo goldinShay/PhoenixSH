@@ -44,7 +44,7 @@ public class MainWindow extends JFrame {
             GuiStateManager.refreshDeviceMatrix(); // ✅ Populate button map
 
             // ✅ Rebuild page 120 with updated matrix
-            JPanel lightPage = ButtonMapManager.renderPageForTypes(
+            JComponent lightPage = ButtonMapManager.renderPageForTypes(
                     new DeviceType[]{DeviceType.LIGHT}, 0, 120
             );
             PageNavigator.registerPage(120, lightPage);
@@ -70,7 +70,7 @@ public class MainWindow extends JFrame {
 
             GuiStateManager.refreshDeviceMatrix(); // ✅ Populate button map
 
-            JPanel lightPage = ButtonMapManager.renderPageForTypes(
+            JComponent lightPage = ButtonMapManager.renderPageForTypes(
                     new DeviceType[]{DeviceType.LIGHT}, 0, 120
             );
             PageNavigator.registerPage(120, lightPage); // ✅ Matrix ready when needed

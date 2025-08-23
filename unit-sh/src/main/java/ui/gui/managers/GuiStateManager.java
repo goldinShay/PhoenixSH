@@ -66,7 +66,7 @@ public class GuiStateManager {
             PageNavigator.goToPage(120);
 
             // ✅ Force GUI refresh
-            JPanel panel = PageNavigator.getPage(120);
+            JComponent panel = PageNavigator.getPage(120);
             if (panel != null) {
                 panel.revalidate();
                 panel.repaint();

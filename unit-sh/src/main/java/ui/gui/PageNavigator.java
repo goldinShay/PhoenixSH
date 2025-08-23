@@ -14,7 +14,7 @@ public class PageNavigator {
     private static CardLayout cardLayout;           // Layout manager for switching views
 
     private static final Map<Integer, String> pageMap = new HashMap<>();      // Page number → card name
-    private static final Map<Integer, JPanel> pageRegistry = new HashMap<>(); // Page number → actual panel
+    private static Map<Integer, JComponent> pageRegistry = new HashMap<>();
 
     private static int currentPageId = -1;
 
@@ -33,7 +33,7 @@ public class PageNavigator {
     /**
      * Registers a new page with a specific ID. Ignore duplicates.
      */
-    public static void registerPage(int pageNumber, JPanel page) {
+    public static void registerPage(int pageNumber, JComponent page) {
         String pageKey = "PAGE_" + pageNumber;
 
         if (container == null) {
@@ -57,6 +57,7 @@ public class PageNavigator {
         container.revalidate();
         container.repaint();
     }
+
 
     /**
      * Switches to a page by its numeric ID.
@@ -120,7 +121,7 @@ public class PageNavigator {
     /**
      * Returns the actual JPanel for a given page ID.
      */
-    public static JPanel getPage(int pageNumber) {
+    public static JComponent getPage(int pageNumber) {
         return pageRegistry.get(pageNumber);
     }
 }

@@ -74,17 +74,25 @@ public class ChooseLightsUpdatePage extends JPanel {
         return footer;
     }
 
-    private JScrollPane createMatrixPanel(DeviceType[] types) {
-        JPanel grid = ButtonMapManager.renderPageForTypes(types, pageIndex, basePageId + pageIndex);
-        grid.setPreferredSize(new Dimension(800, 360)); // Constrain matrix size
+    private JPanel createMatrixPanel(DeviceType[] types) {
+        JComponent grid = ButtonMapManager.renderPageForTypes(types, pageIndex, basePageId + pageIndex);
+        grid.setPreferredSize(new Dimension(800, 360));
 
         JScrollPane scrollPane = new JScrollPane(grid);
         scrollPane.setPreferredSize(new Dimension(800, 360));
+        scrollPane.setMaximumSize(new Dimension(800, 360));
+        scrollPane.setMinimumSize(new Dimension(800, 360));
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-        return scrollPane;
+        // 🧱 FlowLayout wrapper to respect preferred size
+        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        wrapper.setPreferredSize(new Dimension(800, 360));
+        wrapper.setBackground(Theme.BACKGROUND_DARK);
+        wrapper.add(scrollPane);
+
+        return wrapper;
     }
 
     public static ChooseLightsUpdatePage loadFresh(int pageIndex, int basePageId, DeviceType... types) {

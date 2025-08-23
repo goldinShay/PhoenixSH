@@ -50,13 +50,6 @@ public class LightSensor extends Sensor {
         }
     }
 
-    // 🔄 Renamed to avoid conflict with Sensor class
-    public final void linkDevice(Device device) {
-        if (device != null && !linkedDevices.contains(device)) {
-            internalAddLinkedDevice(device);
-        }
-    }
-
     @Override
     void internalAddLinkedDevice(Device device) {
         if (device != null && !linkedDevices.contains(device)) {

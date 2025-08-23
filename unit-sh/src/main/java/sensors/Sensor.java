@@ -54,9 +54,6 @@ public abstract class Sensor implements Runnable {
             System.out.printf("🧹 Removed '%s' from sensor '%s'%n", device.getId(), sensorId);
         }
     }
-//    public void clearSlaves() {
-//        slaveDevices.clear();
-//    }
 
     public List<Device> getLinkedDevice() {
         return Collections.unmodifiableList(linkedDevices);
@@ -73,13 +70,20 @@ public abstract class Sensor implements Runnable {
         for (Device device : linkedDevices) {
             if (!device.isAutomationEnabled()) continue;
 
-            if (value < device.getAutoThreshold()) {
+            boolean shouldActivate = switch (this.type) {
+                case MOTION -> value == 1.0;
+                case LIGHT, TEMPERATURE, HUMIDITY -> value < device.getAutoThreshold();
+                default -> value >= device.getAutoThreshold();
+            };
+
+            if (shouldActivate) {
                 device.turnOn();
             } else {
                 device.turnOff();
             }
         }
     }
+
 
     // ─── 🎛 Sensor Mechanics ───
     public abstract double readCurrentValue();
