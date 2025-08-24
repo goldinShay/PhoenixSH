@@ -10,12 +10,12 @@ import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
-public class ChooseLightsUpdatePage extends JPanel {
+public class ChooseUtilDevicePage extends JPanel {
     private final int pageIndex;
     private final List<DeviceType> deviceTypes;
     private final int basePageId;
 
-    public ChooseLightsUpdatePage(int pageIndex, int basePageId, DeviceType... types) {
+    public ChooseUtilDevicePage(int pageIndex, int basePageId, DeviceType... types) {
         this.pageIndex = pageIndex;
         this.deviceTypes = Arrays.asList(types);
         this.basePageId = basePageId;
@@ -35,7 +35,7 @@ public class ChooseLightsUpdatePage extends JPanel {
         header.setBorder(BorderFactory.createTitledBorder(null, "Choose Device",
                 0, 0, new Font("Monospaced", Font.PLAIN, 14), Color.LIGHT_GRAY));
 
-        JLabel title = new JLabel("📟 Select Light to Control", JLabel.CENTER);
+        JLabel title = new JLabel("🛠️ Select Utility Device", JLabel.CENTER);
         title.setForeground(Color.LIGHT_GRAY);
         title.setFont(new Font("Monospaced", Font.BOLD, 16));
         title.setBounds(0, 40, 800, 40);
@@ -86,7 +86,6 @@ public class ChooseLightsUpdatePage extends JPanel {
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-        // 🧱 FlowLayout wrapper to respect preferred size
         JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         wrapper.setPreferredSize(new Dimension(800, 360));
         wrapper.setBackground(Theme.BACKGROUND_DARK);
@@ -95,7 +94,7 @@ public class ChooseLightsUpdatePage extends JPanel {
         return wrapper;
     }
 
-    public static ChooseLightsUpdatePage loadFresh(int pageIndex, int basePageId, DeviceType... types) {
-        return new ChooseLightsUpdatePage(pageIndex, basePageId, types);
+    public static ChooseUtilDevicePage loadFresh(int pageIndex, int basePageId, DeviceType... types) {
+        return new ChooseUtilDevicePage(pageIndex, basePageId, types);
     }
 }

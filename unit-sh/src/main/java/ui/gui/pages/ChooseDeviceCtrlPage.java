@@ -1,9 +1,11 @@
 package ui.gui.pages;
 
 import devices.DeviceType;
+import devices.actions.LiveDeviceState;
 import storage.DeviceStorage;
 import ui.gui.PageNavigator;
 import ui.gui.devicesListPages.ChooseLightsUpdatePage;
+import ui.gui.devicesListPages.ChooseUtilDevicePage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,6 +49,29 @@ public class ChooseDeviceCtrlPage extends JPanel {
         });
 
         JButton utilsBtn = createMainButton("<html><center>HOUSE<br>UTILS</center></html>");
+        utilsBtn.addActionListener(e -> {
+            DeviceStorage.reloadFromExcel(); // 🔄 Refresh device data
+
+            DeviceStorage.getDevices().values().forEach(device -> {
+                if (device.isOn()) {
+                    LiveDeviceState.turnOn(device);
+                } else {
+                    LiveDeviceState.turnOff(device);
+                }
+            });
+
+            ChooseUtilDevicePage page = ChooseUtilDevicePage.loadFresh(
+                    0, 400,
+                    DeviceType.THERMOSTAT,
+                    DeviceType.WASHING_MACHINE,
+                    DeviceType.DRYER
+            );
+
+            PageNavigator.registerPage(400, page); // 🧭 Register before navigating
+            PageNavigator.goToPage(400);           // 🚀 Launch the matrix
+        });
+
+
         JButton securityBtn = createMainButton("SECURITY");
 
         for (JButton btn : java.util.List.of(lightsBtn, utilsBtn, securityBtn)) {

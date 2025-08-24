@@ -3,19 +3,31 @@ package ui.deviceActionMenu;
 import devices.Device;
 import devices.WashingMachine;
 import devices.actions.WashingMachineAction;
+import devices.actions.actionSimulator.WasherCycleSimulator;
+import devices.actions.advancedActions.WashActionsLGTwin;
 import autoOp.AutoOpController;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class WasherActionsMenu {
+
     public static void show(Device device) {
         if (!(device instanceof WashingMachine washer)) {
             System.out.println("⚠️ This menu is only for Washing Machines.");
             return;
         }
 
-        boolean isBoschFlagship = "BWM14025".equalsIgnoreCase(washer.getModel());
-        Scanner scanner = new Scanner(System.in); // ✅ fresh scanner for test compatibility
+        Scanner scanner = new Scanner(System.in);
+        String brand = washer.getBrand();
+        String model = washer.getModel();
+
+        boolean isLGTwinWash = WashActionsLGTwin.isCompatible(brand, model);
+        List<WashingMachineAction> availablePrograms = isLGTwinWash
+                ? WashActionsLGTwin.getAvailablePrograms()
+                : List.of(); // fallback for unsupported models
+
+        WashingMachineAction defaultProgram = WashingMachineAction.ECO_WASH;
 
         while (true) {
             System.out.println("\n=== Washing Machine Actions ===");
@@ -25,15 +37,17 @@ public class WasherActionsMenu {
 
             System.out.println("1 - Turn ON");
             System.out.println("2 - Turn OFF");
-            System.out.println("3 - Start Program");
+            System.out.println("3 - Start Program (" + defaultProgram.getLabel() + ")");
             System.out.println("4 - Stop Program");
             System.out.println("5 - AutoOp");
 
-            if (isBoschFlagship) {
-                System.out.println("6 - " + WashingMachineAction.QUICK_WASH.getLabel());
-                System.out.println("7 - " + WashingMachineAction.HEAVY_DUTY.getLabel());
-                System.out.println("8 - " + WashingMachineAction.RINSE_AND_SPIN.getLabel());
-                System.out.println("9 - Back");
+            if (!availablePrograms.isEmpty()) {
+                for (int i = 0; i < availablePrograms.size(); i++) {
+                    WashingMachineAction action = availablePrograms.get(i);
+                    int duration = WashActionsLGTwin.getEstimatedDuration(action);
+                    System.out.printf("%d - %s (%d min)%n", 6 + i, action.getLabel(), duration);
+                }
+                System.out.println((6 + availablePrograms.size()) + " - Back");
             } else {
                 System.out.println("6 - Advanced Programs (Not available on this model)");
                 System.out.println("7 - Back");
@@ -45,48 +59,43 @@ public class WasherActionsMenu {
             switch (input) {
                 case "1" -> washer.turnOn();
                 case "2" -> washer.turnOff();
-                case "3" -> washer.start();
+                case "3" -> {
+                    washer.setMode(defaultProgram);
+                    System.out.println("🌱 " + defaultProgram.getLabel() + " started.");
+                    WasherCycleSimulator.simulateCycle(defaultProgram);
+                }
                 case "4" -> washer.stop();
                 case "5" -> AutoOpController.display(washer);
+                default -> {
+                    int offset = 6;
+                    int backOption = offset + availablePrograms.size();
 
-                case "6" -> {
-                    if (isBoschFlagship) {
-                        washer.setMode(WashingMachineAction.QUICK_WASH);
-                        System.out.println("🚿 " + WashingMachineAction.QUICK_WASH.getLabel() + " started.");
-                    } else {
+                    if (!availablePrograms.isEmpty()) {
+                        try {
+                            int choice = Integer.parseInt(input);
+                            if (choice >= offset && choice < backOption) {
+                                WashingMachineAction selected = availablePrograms.get(choice - offset);
+                                washer.setMode(selected);
+                                System.out.println("🌀 " + selected.getLabel() + " activated.");
+                                WasherCycleSimulator.simulateCycle(selected);
+                            } else if (choice == backOption) {
+                                System.out.println("↩️ Back to device menu.");
+                                return;
+                            } else {
+                                System.out.println("❌ Invalid option.");
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("❌ Invalid input. Please enter a number.");
+                        }
+                    } else if ("6".equals(input)) {
                         System.out.println("ℹ️ Advanced programs not supported on this model.");
-                    }
-                }
-
-                case "7" -> {
-                    if (isBoschFlagship) {
-                        washer.setMode(WashingMachineAction.HEAVY_DUTY);
-                        System.out.println("💪 " + WashingMachineAction.HEAVY_DUTY.getLabel() + " started.");
-                    } else {
-                        System.out.println("↩️ Back to device menu.");
-                        return;
-                    }
-                }
-
-                case "8" -> {
-                    if (isBoschFlagship) {
-                        washer.setMode(WashingMachineAction.RINSE_AND_SPIN);
-                        System.out.println("🔄 " + WashingMachineAction.RINSE_AND_SPIN.getLabel() + " activated.");
-                    } else {
-                        System.out.println("❌ Invalid option.");
-                    }
-                }
-
-                case "9" -> {
-                    if (isBoschFlagship) {
+                    } else if ("7".equals(input)) {
                         System.out.println("↩️ Back to device menu.");
                         return;
                     } else {
-                        System.out.println("❌ Invalid option.");
+                        System.out.println("❌ Invalid option. Please try again.");
                     }
                 }
-
-                default -> System.out.println("❌ Invalid option. Please try again.");
             }
         }
     }

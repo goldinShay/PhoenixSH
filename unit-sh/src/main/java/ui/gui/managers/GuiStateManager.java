@@ -6,6 +6,7 @@ import devices.actions.LiveDeviceState;
 import storage.DeviceStorage;
 import ui.gui.PageNavigator;
 import ui.gui.devicesListPages.ChooseLightsUpdatePage;
+import ui.gui.guiDeviceControl.HeaterControlPage;
 import ui.gui.guiDeviceControl.LightControlPage;
 import utils.Log;
 
@@ -76,10 +77,24 @@ public class GuiStateManager {
     }
 
     public static void refreshDeviceControlPage(Device device) {
-        int pageId = 210 + Integer.parseInt(device.getId().replaceAll("[^0-9]", ""));
+        // Generate a stable page ID based on device ID
+        int numericId = Integer.parseInt(device.getId().replaceAll("[^0-9]", ""));
+        int pageId = 200 + numericId;
 
+        // Dynamically choose the correct control page
+        JComponent controlPage = switch (device.getType()) {
+            case SMART_LIGHT, LIGHT -> new LightControlPage(device, pageId);
+            case THERMOSTAT -> new HeaterControlPage(device, pageId);
+            // Add more types here as needed
+            default -> {
+                System.out.println("⚠️ No control page defined for: " + device.getType());
+                yield new JPanel(); // fallback empty panel
+            }
+        };
+
+        // Register and navigate
         if (!PageNavigator.isPageRegistered(pageId)) {
-            PageNavigator.registerPage(pageId, new LightControlPage(device, pageId));
+            PageNavigator.registerPage(pageId, controlPage);
         }
 
         PageNavigator.goToPage(pageId);

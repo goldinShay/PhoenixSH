@@ -6,7 +6,8 @@ public enum WashingMachineAction {
     OFF("Power Off"),
 
     // Wash programs
-    QUICK_WASH("Quick Wash", 30, 800),
+    QUICK_WASH("Quick Wash", 40, 800),
+    ECO_WASH("Eco Wash", 30, 600),
     HEAVY_DUTY("Heavy Duty", 60, 1000),
     RINSE_AND_SPIN("Rinse & Spin", 20, 1200);
 
